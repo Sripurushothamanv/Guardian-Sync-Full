@@ -1,0 +1,63 @@
+name: Guardian-Sync Automation Testing Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test-and-report:
+    name: Run Automated Tests & Generate Excel Report
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: 'test_suite/package.json'
+
+    - name: Install Dependencies
+      run: |
+        cd test_suite
+        npm install
+
+    - name: Run Test Suite (Appium, Selenium, Load)
+      run: |
+        cd test_suite
+        node run_tests.js
+
+    - name: Publish Test Summary to Job Dashboard
+      if: always()
+      run: |
+        cat test_suite/github_summary.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Appium Excel Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: appium-test-report
+        path: test_suite/appium_test_report.xlsx
+        retention-days: 30
+
+    - name: Upload Selenium Excel Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: selenium-test-report
+        path: test_suite/selenium_test_report.xlsx
+        retention-days: 30
+
+    - name: Upload Load Excel Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: load-test-report
+        path: test_suite/load_test_report.xlsx
+        retention-days: 30

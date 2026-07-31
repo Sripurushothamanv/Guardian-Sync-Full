@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "461920928696",
+    "project_id": "guardian-sync-4694f",
+    "storage_bucket": "guardian-sync-4694f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461920928696:android:0cc0f3039d205fedc6c54d",
+        "android_client_info": {
+          "package_name": "com.company.guardiansync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCPAzRCZNkMVUCcreYZpwkbJ4hWXkNyZk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

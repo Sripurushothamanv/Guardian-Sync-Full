@@ -1,0 +1,12 @@
+{
+  "name": "guardian-sync-test-suite",
+  "version": "1.0.0",
+  "description": "Appium, Selenium, and Load automated tests report generator",
+  "main": "run_tests.js",
+  "scripts": {
+    "test": "node run_tests.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

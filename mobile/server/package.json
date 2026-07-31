@@ -1,0 +1,24 @@
+{
+  "name": "guardian-sync-server",
+  "version": "1.0.0",
+  "description": "Node.js + Express backend for Guardian Sync using MongoDB",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^8.7.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.0",
+    "dotenv": "^16.4.1",
+    "express": "^4.19.2",
+    "firebase-admin": "^14.2.0",
+    "jsonwebtoken": "^9.0.1",
+    "mongodb": "^6.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

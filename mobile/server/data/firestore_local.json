@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "name": "Demo User",
+      "email": "demo@guardian.com",
+      "password": "$2b$10$U51/Q1mUqZnsSvMVGGk0du5JbgcM6DjVwo546nqJbVngwNbdeMvDa",
+      "role": "Healthcare Worker",
+      "department": "General",
+      "hospital": "Guardian Sync",
+      "sleepGoal": 8,
+      "caffeineLimit": 400,
+      "waterGoal": 3000,
+      "createdAt": "2026-07-31T04:00:04.510Z",
+      "_id": "ms8ez99lfezrc3s",
+      "id": "ms8ez99lfezrc3s"
+    }
+  ],
+  "logs": []
+}
