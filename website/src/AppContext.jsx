@@ -923,6 +923,53 @@ export const AppProvider = ({ children }) => {
     return `🤖 **Guardian-Sync AI Context**:\nYour current fatigue index is **${fatigueScore}/100** (${fatigueLevel} Risk) with **${activeCaffeine} mg** active caffeine. You can dictate or type your sleep, caffeine, meals, or duty shifts to log them instantly!`;
   };
 
+  const applyFatigueSimulation = (simData) => {
+    const { simSleepDebt, simAwakeHours, simCaffeine, simShiftType } = simData;
+    let shiftImpact = 0;
+    if (simShiftType === 'Night') shiftImpact = 30;
+    else if (simShiftType === 'On-Call') shiftImpact = 25;
+    else if (simShiftType === 'Rotating') shiftImpact = 20;
+    else if (simShiftType === 'Day') shiftImpact = 10;
+
+    const rawScore = (simSleepDebt * 3) + (simAwakeHours * 1.5) + shiftImpact - (simCaffeine * 0.15);
+    const score = Math.min(100, Math.max(0, Math.round(rawScore)));
+
+    let level = 'Low';
+    if (score >= 80) level = 'Critical';
+    else if (score >= 60) level = 'High';
+    else if (score >= 40) level = 'Moderate';
+
+    let driveSafety = {
+      status: 'SAFE',
+      color: '#10B981',
+      advice: 'You are safe to drive. Continue staying hydrated.'
+    };
+    if (score >= 70 || simAwakeHours > 18) {
+      driveSafety = {
+        status: 'UNSAFE',
+        color: '#EF4444',
+        advice: 'CRITICAL WARNING: Do NOT drive home. Rest immediately.'
+      };
+    } else if (score >= 55 || simAwakeHours >= 15) {
+      driveSafety = {
+        status: 'CAUTION',
+        color: '#F59E0B',
+        advice: 'CAUTION: Cognitive slowdown likely. Take a power nap.'
+      };
+    }
+
+    setDashboardData(prev => ({
+      ...prev,
+      fatigueScore: score,
+      fatigueLevel: level,
+      sleepDebt: simSleepDebt,
+      awakeHours: simAwakeHours,
+      activeCaffeine: simCaffeine,
+      driveSafety,
+      activeShift: { type: simShiftType, duration: 0 }
+    }));
+  };
+
   return (
     <AppContext.Provider value={{
       token,
