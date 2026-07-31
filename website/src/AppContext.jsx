@@ -16,8 +16,24 @@ export const AppContext = createContext();
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const AppProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem('guardian_token') || null);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('guardian_user')) || null);
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('guardian_token') || null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('guardian_user');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        return JSON.parse(saved);
+      }
+    } catch (_) {}
+    return null;
+  });
+
   const [dashboardData, setDashboardData] = useState({
     fatigueScore: 28,
     fatigueLevel: 'Low',
@@ -42,8 +58,13 @@ export const AppProvider = ({ children }) => {
   
   // Local Logs (Fallback Database)
   const [logs, setLogs] = useState(() => {
-    const saved = localStorage.getItem('guardian_logs');
-    return saved ? JSON.parse(saved) : { sleep: [], caffeine: [], shift: [], nutrition: [] };
+    try {
+      const saved = localStorage.getItem('guardian_logs');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        return JSON.parse(saved);
+      }
+    } catch (_) {}
+    return { sleep: [], caffeine: [], shift: [], nutrition: [] };
   });
 
   // Track logs changes to persist to local storage
