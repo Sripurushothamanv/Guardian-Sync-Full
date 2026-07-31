@@ -410,6 +410,159 @@ export const AppProvider = ({ children }) => {
     runFallbackCalculations();
   };
 
+  const parseAILog = (text) => {
+    const norm = text.toLowerCase();
+    const result = { sleep: null, caffeine: null, shift: null, nutrition: [] };
+
+    // 1. Sleep Parsing
+    const sleepMatch = norm.match(/(?:slept|sleep|rested)?\s*(\d+(?:\.\d+)?)\s*(?:hrs|hours|h|hour)/i);
+    if (sleepMatch) {
+      const duration = parseFloat(sleepMatch[1]) || 7.0;
+      const quality = norm.includes('poor') || norm.includes('bad') || norm.includes('tired') ? 'Poor' : (norm.includes('great') || norm.includes('excellent') || norm.includes('deep') ? 'Excellent' : 'Good');
+      result.sleep = {
+        duration,
+        quality,
+        wakeUps: norm.includes('twice') ? 2 : (norm.includes('once') ? 1 : 0)
+      };
+    }
+
+    // 2. Caffeine Parsing
+    let caffCount = 1;
+    const countMatch = norm.match(/(\d+)\s*(?:cups|cups of|servings|glasses|mugs)?\s*(?:coffee|espresso|tea|energy drink|chai)/i);
+    if (countMatch) {
+      caffCount = parseInt(countMatch[1], 10) || 1;
+    }
+
+    if (norm.includes('espresso')) {
+      result.caffeine = { beverage: 'Espresso Shot', mgAmount: caffCount * 63 };
+    } else if (norm.includes('energy drink') || norm.includes('red bull') || norm.includes('monster')) {
+      result.caffeine = { beverage: 'Energy Drink', mgAmount: caffCount * 160 };
+    } else if (norm.includes('tea') || norm.includes('chai')) {
+      result.caffeine = { beverage: 'Green / Black Tea', mgAmount: caffCount * 47 };
+    } else if (norm.includes('coffee') || norm.includes('cappuccino') || norm.includes('latte')) {
+      result.caffeine = { beverage: 'Filter Coffee', mgAmount: caffCount * 95 };
+    }
+
+    // 3. Shift Parsing
+    const shiftDurationMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:hrs|hours|h|hour)\s*(?:night|day|on-call|rotating)?\s*(?:duty|shift)/i);
+    if (norm.includes('shift') || norm.includes('duty') || norm.includes('on-call')) {
+      const shiftDuration = shiftDurationMatch ? parseFloat(shiftDurationMatch[1]) : 8.0;
+      let shiftType = 'Day';
+      if (norm.includes('night')) shiftType = 'Night';
+      else if (norm.includes('on-call') || norm.includes('on call')) shiftType = 'On-Call';
+      else if (norm.includes('rotating')) shiftType = 'Rotating';
+      result.shift = { duration: shiftDuration, shiftType, breakDuration: 30 };
+    }
+
+    // 4. Nutrition & Hydration Parsing
+    const waterMatch = norm.match(/(\d+)\s*(?:ml|milliliters|glass|glasses|water)/i);
+    if (norm.includes('water') || waterMatch) {
+      const vol = waterMatch ? parseInt(waterMatch[1], 10) : 250;
+      result.nutrition.push({
+        mealCategory: 'Hydration',
+        foodItem: 'Water',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+        volume: vol
+      });
+    }
+
+    const dishDB = {
+      'masala dosa': { name: 'Masala Dosa', c: 250, p: 5, car: 40, f: 8 },
+      'dosa': { name: 'Plain Dosa', c: 120, p: 3, car: 22, f: 4 },
+      'idli': { name: 'Idli', c: 60, p: 2, car: 12, f: 1 },
+      'sambar': { name: 'Sambar Rice', c: 250, p: 6, car: 45, f: 5 },
+      'chapati': { name: 'Chapati', c: 100, p: 3, car: 18, f: 3 },
+      'roti': { name: 'Chapati', c: 100, p: 3, car: 18, f: 3 },
+      'curd rice': { name: 'Curd Rice', c: 200, p: 5, car: 30, f: 6 },
+      'sandwich': { name: 'Sandwich', c: 320, p: 12, car: 35, f: 12 }
+    };
+
+    Object.entries(dishDB).forEach(([key, data]) => {
+      if (norm.includes(key)) {
+        let qty = 1;
+        const qtyMatch = norm.match(new RegExp(`(\\d+)\\s*(?:plates?|pieces?|portions?)?\\s*${key}`, 'i'));
+        if (qtyMatch) qty = parseInt(qtyMatch[1], 10) || 1;
+
+        result.nutrition.push({
+          mealCategory: 'Meal',
+          foodItem: `${qty} x ${data.name}`,
+          calories: data.c * qty,
+          protein: data.p * qty,
+          carbs: data.car * qty,
+          fats: data.f * qty
+        });
+      }
+    });
+
+    return result;
+  };
+
+  const addAILog = async (text) => {
+    const parsed = parseAILog(text);
+    const summaryParts = [];
+    const now = new Date();
+
+    if (parsed.sleep) {
+      const end = now;
+      const start = new Date(end.getTime() - (parsed.sleep.duration * 3600000));
+      await addLog('sleep', {
+        startTime: start,
+        endTime: end,
+        duration: parsed.sleep.duration,
+        quality: parsed.sleep.quality,
+        wakeUps: parsed.sleep.wakeUps
+      });
+      summaryParts.push(`🛌 Sleep: ${parsed.sleep.duration} hrs (${parsed.sleep.quality})`);
+    }
+
+    if (parsed.caffeine) {
+      await addLog('caffeine', {
+        beverage: parsed.caffeine.beverage,
+        mgAmount: parsed.caffeine.mgAmount,
+        timestamp: now
+      });
+      summaryParts.push(`☕ Caffeine: ${parsed.caffeine.beverage} (+${parsed.caffeine.mgAmount}mg)`);
+    }
+
+    if (parsed.shift) {
+      const end = now;
+      const start = new Date(end.getTime() - (parsed.shift.duration * 3600000));
+      await addLog('shift', {
+        startTime: start,
+        endTime: end,
+        duration: parsed.shift.duration,
+        shiftType: parsed.shift.shiftType,
+        breakDuration: parsed.shift.breakDuration
+      });
+      summaryParts.push(`🩺 Shift: ${parsed.shift.duration} hrs ${parsed.shift.shiftType}`);
+    }
+
+    if (parsed.nutrition && parsed.nutrition.length > 0) {
+      for (const item of parsed.nutrition) {
+        await addLog('nutrition', {
+          mealCategory: item.mealCategory,
+          foodItem: item.foodItem,
+          calories: item.calories,
+          protein: item.protein,
+          carbs: item.carbs,
+          fats: item.fats,
+          volume: item.volume,
+          timestamp: now
+        });
+        summaryParts.push(`🥗 ${item.foodItem}`);
+      }
+    }
+
+    return {
+      success: summaryParts.length > 0,
+      summary: summaryParts.length > 0 ? summaryParts.join(' | ') : 'No identifiable metrics detected. Try e.g. "Slept 7 hours" or "Drank 2 cups of coffee".',
+      parsed
+    };
+  };
+
   const addGoal = async (title, type, targetValue) => {
     if (goals.length >= 8) return;
     const newGoal = {
@@ -565,6 +718,7 @@ export const AppProvider = ({ children }) => {
       logout,
       updateProfile,
       addLog,
+      addAILog,
       addGoal,
       editGoal,
       deleteGoal,
