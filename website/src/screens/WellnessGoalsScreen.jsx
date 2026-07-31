@@ -1,355 +1,113 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import { Flame, Check, HelpCircle, Loader2 } from 'lucide-react';
+import { Target, Plus, CheckCircle, Trash2, Award } from 'lucide-react';
 
 export default function WellnessGoalsScreen() {
-  const { goals, streakInfo, updateGoal, fetchGoals, fetchStreaks } = useContext(AppContext);
+  const { goals, addGoal, deleteGoal, addLogToGoal, streakInfo } = useContext(AppContext);
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState('sleep');
+  const [target, setTarget] = useState('8');
 
-  useEffect(() => {
-    fetchGoals();
-    fetchStreaks();
-  }, []);
-
-  const handleUpdateProgress = async (goalId, current, target) => {
-    const inputVal = prompt('Enter quantity to add to log (e.g. 250 for ml, 1 for hr):', '1');
-    if (!inputVal) return;
-    const qty = parseFloat(inputVal);
-    if (isNaN(qty)) return;
-
-    const newCurrent = parseFloat((current + qty).toFixed(1));
-    const completed = newCurrent >= target;
-    await updateGoal(goalId, { currentValue: newCurrent, completed });
-  };
-
-  const handleEditGoal = async (goal) => {
-    const newTitle = prompt('Edit Goal Title:', goal.title);
-    if (!newTitle) return;
-    const newTargetStr = prompt('Edit Target Value:', goal.targetValue);
-    if (!newTargetStr) return;
-    const newTarget = parseFloat(newTargetStr);
-    if (isNaN(newTarget)) return;
-
-    const completed = goal.currentValue >= newTarget;
-    await updateGoal(goal._id, { title: newTitle, targetValue: newTarget, completed });
-  };
-
-  const handleAddCustomGoal = async () => {
-    if (goals.length >= 5) {
-      alert('You have reached the maximum limit of 5 wellness goals.');
-      return;
-    }
-    const title = prompt('Enter Custom Goal Title (e.g. Steps >= 10000):');
+  const handleAddGoal = (e) => {
+    e.preventDefault();
     if (!title) return;
-    const targetStr = prompt('Enter Target Value:');
-    if (!targetStr) return;
-    const targetValue = parseFloat(targetStr);
-    if (isNaN(targetValue)) return;
-
-    const newGoal = {
-      _id: 'custom_g_' + Date.now(),
-      title,
-      type: 'custom',
-      targetValue,
-      currentValue: 0,
-      completed: false
-    };
-    await updateGoal(newGoal._id, newGoal);
+    addGoal(title, type, target);
+    setTitle('');
   };
 
   return (
-    <div className="goals-wrapper">
-      <header className="screen-header">
-        <div className="title-area">
-          <div className="icon-badge" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-            <Flame size={24} />
-          </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <Target size={28} color="#14b8a6" />
           <div>
-            <h2>Daily Wellness Goals</h2>
-            <p>Set targets, earn badges, and maintain your tracking streak counter.</p>
+            <h2 style={{ fontSize: '1.4rem' }}>Wellness Goals</h2>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Custom targets & habit streak tracking</p>
           </div>
         </div>
-      </header>
 
-      {/* Streak Dashboard Card */}
-      <section className="streak-hero-card glass-panel">
-        <div className="streak-content-area">
-          <div className="streak-fire-globe">
-            <span className="fire-emoji">🔥</span>
-            <span className="streak-number">{streakInfo.streakCount}</span>
-          </div>
-          <div className="streak-details">
-            <h3>Active Goal Streak: {streakInfo.streakCount} Days!</h3>
-            <p>Complete at least one daily goal to preserve your streak fire. Consistent logging helps predict accurate wellness trends.</p>
-          </div>
-        </div>
-      </section>
-
-      <div className="screen-content-split">
-        {/* Goals lists */}
-        <div className="goals-list-panel glass-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>Today's Wellness Targets</h3>
-            <button 
-              className="btn-primary btn-small"
-              onClick={handleAddCustomGoal}
-              style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem' }}
-            >
-              + Add Goal ({goals.length}/5)
-            </button>
+        <form onSubmit={handleAddGoal} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Goal Title</label>
+            <input type="text" placeholder="e.g. Daily Water Target 3000ml" value={title} onChange={e => setTitle(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
           </div>
 
-          <div className="goals-rows-stack">
-            {goals.map(goal => {
-              const pct = Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100));
-              return (
-                <div key={goal._id} className={`goal-card-item glass-card ${goal.completed ? 'completed-border' : ''}`}>
-                  <div className="goal-card-row">
-                    <div className="goal-text-info">
-                      <span className={`goal-chk-indicator ${goal.completed ? 'completed' : ''}`}>
-                        {goal.completed && <Check size={12} color="white" />}
-                      </span>
-                      <div>
-                        <strong>{goal.title}</strong>
-                        <p>{pct}% complete towards daily target</p>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button 
-                        className="btn-secondary btn-small"
-                        onClick={() => handleEditGoal(goal)}
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="btn-secondary btn-small"
-                        onClick={() => handleUpdateProgress(goal._id, goal.currentValue, goal.targetValue)}
-                        disabled={goal.completed}
-                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                      >
-                        {goal.completed ? 'Completed' : '+ Add Log'}
-                      </button>
-                    </div>
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Category</label>
+              <select value={type} onChange={e => setType(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(15, 23, 42, 0.8)' }}>
+                <option value="sleep">Sleep Target</option>
+                <option value="caffeine">Caffeine Limit</option>
+                <option value="water">Hydration Target</option>
+                <option value="nutrition">Nutrition Target</option>
+              </select>
+            </div>
 
-                  <div className="goal-card-progress">
-                    <div className="progress-bar-container">
-                      <div className="progress-bar-fill" style={{ width: `${pct}%`, backgroundColor: goal.completed ? 'var(--color-safe)' : 'var(--color-primary)' }}></div>
-                    </div>
-                    <span>{goal.currentValue} / {goal.targetValue}</span>
-                  </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Target Value</label>
+              <input type="number" value={target} onChange={e => setTarget(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Plus size={16} /> Create Goal Target
+          </button>
+        </form>
+
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Active Goals</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto' }}>
+          {goals && goals.length > 0 ? (
+            goals.map((g, i) => (
+              <div key={g._id || i} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontWeight: 'bold', fontSize: '0.95rem', display: 'block' }}>{g.title}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Current: {g.currentValue || 0} / {g.targetValue}</span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Badges Panel */}
-        <div className="badges-panel glass-panel">
-          <h3>Merit Badges & Achievements</h3>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Unlock achievements by establishing healthy habits.
-          </p>
-
-          <div className="badges-grid">
-            {streakInfo.badges.map(badge => (
-              <div 
-                key={badge.id} 
-                className={`badge-box glass-card ${badge.unlocked ? 'unlocked' : 'locked'}`}
-              >
-                <div className="badge-icon-sphere">
-                  <span className="badge-emoji">{badge.icon}</span>
-                  {!badge.unlocked && <div className="badge-lock">🔒</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button type="button" onClick={() => addLogToGoal(g._id, 1)} style={{ padding: '0.35rem 0.65rem', backgroundColor: 'rgba(20, 184, 166, 0.2)', border: '1px solid rgba(20, 184, 166, 0.4)', borderRadius: '0.35rem', color: '#14b8a6', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                    + Progress
+                  </button>
+                  {g.isCustom && (
+                    <button type="button" onClick={() => deleteGoal(g._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
-                <strong>{badge.title}</strong>
-                <p>{badge.description}</p>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>No wellness goals created yet.</p>
+          )}
         </div>
       </div>
 
-      <style>{`
-        .goals-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-        .streak-hero-card {
-          padding: 1.5rem;
-          background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(139, 92, 246, 0.05));
-          border-color: rgba(239, 68, 68, 0.25);
-        }
-        .streak-content-area {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-        .streak-fire-globe {
-          width: 70px;
-          height: 70px;
-          border-radius: 50%;
-          background: rgba(239, 68, 68, 0.15);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          box-shadow: 0 0 15px rgba(239,68,68,0.2);
-          position: relative;
-        }
-        .fire-emoji {
-          font-size: 1.5rem;
-          line-height: 1;
-        }
-        .streak-number {
-          font-size: 1rem;
-          font-weight: 800;
-          color: white;
-          margin-top: -0.1rem;
-        }
-        .streak-details h3 {
-          font-size: 1.15rem;
-          font-weight: 800;
-          color: white;
-        }
-        .streak-details p {
-          font-size: 0.85rem;
-          color: var(--text-secondary);
-          margin-top: 0.25rem;
-          line-height: 1.45;
-        }
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <Award size={28} color="#f59e0b" />
+          <div>
+            <h2 style={{ fontSize: '1.4rem' }}>Badges & Streaks</h2>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Streak Count: {streakInfo?.streakCount || 3} Days 🔥</p>
+          </div>
+        </div>
 
-        .goals-list-panel {
-          padding: 1.5rem;
-        }
-        .goals-rows-stack {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-        .goal-card-item {
-          padding: 1rem !important;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .goal-card-item.completed-border {
-          border-color: rgba(16, 185, 129, 0.25);
-          background: rgba(16, 185, 129, 0.02);
-        }
-        .goal-card-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .goal-text-info {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-        }
-        .goal-chk-indicator {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          border: 2px solid var(--text-muted);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          margin-top: 0.15rem;
-        }
-        .goal-chk-indicator.completed {
-          background-color: var(--color-safe);
-          border-color: transparent;
-        }
-        .goal-text-info strong {
-          font-size: 0.88rem;
-          color: white;
-        }
-        .goal-text-info p {
-          font-size: 0.75rem;
-          color: var(--text-secondary);
-          margin-top: 0.1rem;
-        }
-        .goal-card-progress {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          font-size: 0.75rem;
-          color: var(--text-secondary);
-        }
-        .goal-card-progress span {
-          width: 80px;
-          text-align: right;
-          font-weight: 600;
-        }
-
-        .badges-panel {
-          padding: 1.5rem;
-        }
-        .badges-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-        .badge-box {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 1.25rem !important;
-          transition: var(--transition-smooth);
-        }
-        .badge-box.locked {
-          opacity: 0.45;
-          filter: grayscale(1);
-        }
-        .badge-box.locked:hover {
-          opacity: 0.6;
-          filter: none;
-        }
-        .badge-icon-sphere {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.06);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 0.75rem;
-          position: relative;
-        }
-        .badge-emoji {
-          font-size: 1.5rem;
-        }
-        .badge-lock {
-          position: absolute;
-          bottom: -4px;
-          right: -4px;
-          font-size: 0.7rem;
-        }
-        .badge-box strong {
-          font-size: 0.85rem;
-          color: white;
-        }
-        .badge-box p {
-          font-size: 0.72rem;
-          color: var(--text-secondary);
-          line-height: 1.3;
-          margin-top: 0.25rem;
-        }
-        @media (max-width: 576px) {
-          .badges-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {(streakInfo?.badges || [
+            { title: 'First Step', description: 'Joined Guardian-Sync and started tracking wellness.', icon: '🌱', unlocked: true },
+            { title: 'Sleep Champion', description: 'Logged sleep 3+ times to manage sleep debt.', icon: '😴', unlocked: true },
+            { title: 'Night Shift Survivor', description: 'Completed 3+ overnight shifts.', icon: '🦇', unlocked: true },
+            { title: 'Caffeine Commander', description: 'Logged caffeine intake 5+ times.', icon: '☕', unlocked: true }
+          ]).map((b, i) => (
+            <div key={i} className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', opacity: b.unlocked ? 1 : 0.4 }}>
+              <span style={{ fontSize: '2rem' }}>{b.icon}</span>
+              <div>
+                <strong style={{ display: 'block', fontSize: '0.95rem' }}>{b.title}</strong>
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{b.description}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,189 +1,97 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import { User, Check, Shield, Briefcase, Activity, Target } from 'lucide-react';
+import { User, Building, Shield, Save, Check } from 'lucide-react';
 
 export default function ProfileScreen() {
   const { user, updateProfile } = useContext(AppContext);
-  const [name, setName] = useState(user ? user.name : '');
-  const [role, setRole] = useState(user ? user.role : 'Doctor');
-  const [hospital, setHospital] = useState(user ? user.hospital : '');
-  const [department, setDepartment] = useState(user ? user.department : '');
-  
-  // Goals targets
-  const [sleepGoal, setSleepGoal] = useState(user ? user.sleepGoal : 8);
-  const [caffeineLimit, setCaffeineLimit] = useState(user ? user.caffeineLimit : 400);
-  const [waterGoal, setWaterGoal] = useState(user ? user.waterGoal : 3000);
-
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+  const [role, setRole] = useState(user?.role || 'Doctor');
+  const [hospital, setHospital] = useState(user?.hospital || '');
+  const [department, setDepartment] = useState(user?.department || '');
+  const [sleepGoal, setSleepGoal] = useState(user?.sleepGoal?.toString() || '8');
+  const [caffeineLimit, setCaffeineLimit] = useState(user?.caffeineLimit?.toString() || '400');
+  const [saved, setSaved] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setSuccess(false);
-
     await updateProfile({
       name,
       role,
       hospital,
       department,
-      sleepGoal,
-      caffeineLimit,
-      waterGoal
+      sleepGoal: Number(sleepGoal),
+      caffeineLimit: Number(caffeineLimit)
     });
-
-    setSaving(false);
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   return (
-    <div className="profile-wrapper">
-      <header className="screen-header">
-        <div className="title-area">
-          <div className="icon-badge" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-            <User size={24} />
+    <div style={{ maxWidth: '750px', margin: '0 auto' }}>
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <User size={32} color="#8b5cf6" />
           </div>
           <div>
-            <h2>My Wellness Profile</h2>
-            <p>Update your department roster schedules and personalized bio-health targets.</p>
+            <h2 style={{ fontSize: '1.5rem' }}>{user?.name || 'Healthcare Worker'}</h2>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>{user?.email}</p>
           </div>
         </div>
-      </header>
 
-      {success && (
-        <div className="toast-success glass-panel">
-          <Check size={18} color="var(--color-safe)" />
-          <span>Profile configuration saved successfully!</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="profile-grid-form">
-        {/* Bio info */}
-        <div className="glass-panel profile-section-card">
-          <div className="section-title-row">
-            <Briefcase size={18} color="var(--color-primary)" />
-            <h3>Professional Identity</h3>
+        {saved && (
+          <div className="glass-card" style={{ padding: '0.75rem 1rem', marginBottom: '1.5rem', backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Check size={18} /> Profile settings updated successfully.
           </div>
+        )}
 
-          <div className="form-group-stack" style={{ marginTop: '1rem' }}>
-            <div className="form-group">
-              <label>Full Name</label>
-              <input 
-                type="text" value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-field" required
-              />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Full Name</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
             </div>
 
-            <div className="form-group">
-              <label>Role</label>
-              <select 
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="input-field"
-                style={{ background: '#0a0e1e' }}
-              >
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Clinical Role</label>
+              <select value={role} onChange={e => setRole(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(15, 23, 42, 0.8)' }}>
                 <option value="Doctor">👨‍⚕️ Doctor</option>
                 <option value="Nurse">👩‍⚕️ Nurse</option>
-                <option value="Intern">🩺 Medical Intern</option>
-                <option value="Night-Shift Staff">🌙 Night-Shift Staff</option>
-                <option value="Other">Other Staff</option>
-              </select>
-            </div>
-
-              <div className="form-group-row">
-              <div className="form-group">
-                <label>Hospital / Clinic</label>
-                <input 
-                  type="text" value={hospital}
-                  onChange={(e) => setHospital(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Department</label>
-                <input 
-                  type="text" value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Default Shift Type</label>
-              <select 
-                value={user?.shiftType || 'Day'}
-                onChange={(e) => updateProfile({ shiftType: e.target.value })}
-                className="input-field"
-                style={{ background: '#0a0e1e' }}
-              >
-                <option value="Day">☀️ Day Shift</option>
-                <option value="Night">🌙 Night Shift</option>
-                <option value="Rotating">🔄 Rotating Shift</option>
-                <option value="On-Call">🩺 On-Call Duty</option>
+                <option value="Paramedic">🚑 Paramedic</option>
+                <option value="Resident">🩺 Resident</option>
               </select>
             </div>
           </div>
 
-          <div className="profile-submit-area" style={{ marginTop: '1.5rem' }}>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Configuration'}
-            </button>
-          </div>
-        </div>
-      </form>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Hospital / Clinic</label>
+              <input type="text" value={hospital} onChange={e => setHospital(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} />
+            </div>
 
-      <style>{`
-        .profile-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          max-width: 1100px;
-          margin: 0 auto;
-        }
-        .profile-grid-form {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
-        }
-        .profile-section-card {
-          padding: 1.5rem;
-        }
-        .section-title-row {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          padding-bottom: 0.75rem;
-        }
-        .section-title-row h3 {
-          font-size: 1rem;
-          font-weight: 700;
-          color: white;
-        }
-        .form-group-stack {
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-        .profile-submit-area {
-          grid-column: 1 / span 2;
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 0.5rem;
-        }
-        @media (max-width: 768px) {
-          .profile-grid-form {
-            grid-template-columns: 1fr;
-          }
-          .profile-submit-area {
-            grid-column: 1;
-          }
-        }
-      `}</style>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Department</label>
+              <input type="text" value={department} onChange={e => setDepartment(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Sleep Goal (Hours/Night)</label>
+              <input type="number" step="0.5" value={sleepGoal} onChange={e => setSleepGoal(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Daily Caffeine Safety Cap (mg)</label>
+              <input type="number" value={caffeineLimit} onChange={e => setCaffeineLimit(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Save size={16} /> Save Profile Changes
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

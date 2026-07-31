@@ -1,38 +1,16 @@
-# Guardian Sync - Website
+# React + Vite
 
-The Guardian Sync web application built with React + Vite, hosted on GitHub Pages.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Live Website
+Currently, two official plugins are available:
 
-🌐 **Live at:** `https://sripurushothamanv.github.io/Guardian-sync-website/`
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## GitHub Pages Deployment
+## React Compiler
 
-This repository includes an automated GitHub Actions workflow that builds and deploys the website to GitHub Pages on every push to `main`.
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### Setup Instructions:
+## Expanding the Oxlint configuration
 
-1. Push your changes to the `main` branch of this GitHub repository.
-2. Go to your repository on GitHub: **Settings → Pages**.
-3. Under **Build and deployment → Source**, select **GitHub Actions**.
-4. The workflow in `.github/workflows/deploy-website.yml` will automatically build and publish the site.
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Related Repositories
-
-- **Mobile App:** [Guardian-sync-mobile](https://github.com/Sripurushothamanv/Guardian-sync-mobile)
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.

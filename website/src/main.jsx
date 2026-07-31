@@ -1,9 +1,9 @@
-import React, { StrictMode, Component } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
 
-class ErrorBoundary extends Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -14,8 +14,14 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Guardian-Sync Web Error:', error, errorInfo);
+    console.error("Uncaught error:", error, errorInfo);
   }
+
+  handleReset = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.reload();
+  };
 
   render() {
     if (this.state.hasError) {
@@ -27,43 +33,50 @@ class ErrorBoundary extends Component {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'Outfit, sans-serif',
+          justifyInContent: 'center',
           padding: '2rem',
-          textAlign: 'center'
+          textAlign: 'center',
+          fontFamily: 'sans-serif'
         }}>
-          <h1 style={{ color: '#8b5cf6', fontSize: '2rem', marginBottom: '1rem', letterSpacing: '2px' }}>GUARDIAN-SYNC</h1>
-          <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '2rem' }}>
-            Application error detected. Click below to clear cache and restart.
-          </p>
-          <button 
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#8b5cf6',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '0.5rem',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            Reset Session & Launch
-          </button>
+          <div style={{
+            background: 'rgba(22, 28, 54, 0.8)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '1rem',
+            padding: '2.5rem',
+            maxWidth: '500px'
+          }}>
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Application Reset Required</h2>
+            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              A temporary session mismatch occurred. Click below to refresh your local cache and load the latest updates.
+            </p>
+            <button
+              onClick={this.handleReset}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '0.85rem 1.75rem',
+                borderRadius: '0.5rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Reset Session & Launch
+            </button>
+          </div>
         </div>
       );
     }
+
     return this.props.children;
   }
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </StrictMode>,
-)
+  </React.StrictMode>
+);

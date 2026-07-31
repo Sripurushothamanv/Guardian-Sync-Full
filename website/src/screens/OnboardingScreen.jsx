@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Sparkles, Car, ChevronRight, Activity } from 'lucide-react';
+import { Brain, Coffee, ShieldCheck, ChevronRight } from 'lucide-react';
 
 export default function OnboardingScreen() {
   const [slide, setSlide] = useState(0);
@@ -8,25 +8,22 @@ export default function OnboardingScreen() {
 
   const slides = [
     {
+      icon: <Brain size={48} color="#8b5cf6" />,
+      tag: 'BIOMEDICAL AI',
       title: 'Heuristic Fatigue Predictor',
-      description: 'Our proprietary algorithm factors in sleep debt, hours awake, coffee decays, and shift parameters to predict your fatigue index in real-time.',
-      icon: Brain,
-      color: '#8b5cf6',
-      badge: 'BIOMEDICAL AI'
+      description: 'Our proprietary algorithm factors in sleep debt, hours awake, coffee decays, and shift parameters to predict your fatigue index in real-time.'
     },
     {
-      title: 'Dual NLP Logging Modes',
-      description: 'Too tired to type after a 12-hour duty? Type or dictate one sentence: "Slept 4 hours, 2 coffees, worked night shift". The AI extracts and saves everything.',
-      icon: Sparkles,
-      color: '#06b6d4',
-      badge: 'ZERO FRICTION'
+      icon: <Coffee size={48} color="#f59e0b" />,
+      tag: 'EXPONENTIAL DECAY',
+      title: 'Active Caffeine Tracking',
+      description: 'Track coffee, tea, and energy drink consumption with a 5-hour half-life exponential decay model to optimize alertness during long shifts.'
     },
     {
-      title: 'Safe-To-Drive Check',
-      description: 'Receive color-coded safety indices (Safe, Caution, Unsafe) with advice and run quick cognitive reaction response tests before starting your vehicle.',
-      icon: Car,
-      color: '#10b981',
-      badge: 'LIFE-SAVING WARNINGS'
+      icon: <ShieldCheck size={48} color="#10b981" />,
+      tag: 'AUTOMATED SAFETY',
+      title: 'Safe to Drive Assessor',
+      description: 'Real-time safety checks evaluate whether you are safe to drive home after heavy overnight hospital shifts.'
     }
   ];
 
@@ -34,182 +31,44 @@ export default function OnboardingScreen() {
     if (slide < slides.length - 1) {
       setSlide(slide + 1);
     } else {
-      navigate('/register');
+      navigate('/login');
     }
   };
 
-  const handleSkip = () => {
-    navigate('/register');
-  };
-
-  const CurrentIcon = slides[slide].icon;
-
   return (
-    <div className="onboarding-wrapper">
-      <div className="onboarding-card glass-panel">
-        <div className="onboarding-header">
-          <div className="brand-logo">
-            <Activity size={18} color="#8b5cf6" />
-            <span>GUARDIAN<strong>SYNC</strong></span>
-          </div>
-          <button className="skip-btn" onClick={handleSkip}>Skip</button>
+    <div className="auth-wrapper">
+      <div className="auth-card glass-panel" style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#8b5cf6', letterSpacing: '1px' }}>GUARDIANSYNC</span>
+          <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.85rem' }}>Skip</button>
         </div>
 
-        <div className="onboarding-body">
-          <div 
-            className="icon-sphere" 
-            style={{ 
-              backgroundColor: `${slides[slide].color}15`, 
-              borderColor: `${slides[slide].color}30`,
-              boxShadow: `0 0 30px ${slides[slide].color}15`
-            }}
-          >
-            <CurrentIcon size={48} color={slides[slide].color} className="bounce-on-mount" />
-          </div>
-          
-          <span className="onboard-badge" style={{ color: slides[slide].color, background: `${slides[slide].color}12` }}>
-            {slides[slide].badge}
-          </span>
-
-          <h2>{slides[slide].title}</h2>
-          <p>{slides[slide].description}</p>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+          {slides[slide].icon}
         </div>
 
-        <div className="onboarding-footer">
-          <div className="indicator-row">
-            {slides.map((_, idx) => (
-              <span 
-                key={idx} 
-                className={`indicator-dot ${idx === slide ? 'active' : ''}`}
-                style={{ backgroundColor: idx === slide ? slides[slide].color : 'rgba(255,255,255,0.1)' }}
-              />
+        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#06b6d4', letterSpacing: '1.5px', display: 'block', marginBottom: '0.5rem' }}>
+          {slides[slide].tag}
+        </span>
+
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{slides[slide].title}</h2>
+
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '2rem', minHeight: '80px' }}>
+          {slides[slide].description}
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {slides.map((_, i) => (
+              <div key={i} style={{ width: i === slide ? '20px' : '8px', height: '8px', borderRadius: '4px', background: i === slide ? '#8b5cf6' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
             ))}
           </div>
 
-          <button 
-            onClick={handleNext} 
-            className="btn-primary onboard-next-btn"
-            style={{ background: `linear-gradient(135deg, ${slides[slide].color}, #4f46e5)` }}
-          >
-            {slide === slides.length - 1 ? 'Start Logging' : 'Next'} <ChevronRight size={16} />
+          <button onClick={handleNext} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem' }}>
+            {slide === slides.length - 1 ? 'Get Started' : 'Next'} <ChevronRight size={16} />
           </button>
         </div>
       </div>
-
-      <style>{`
-        .onboarding-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          padding: 1.5rem;
-          width: 100%;
-        }
-        .onboarding-card {
-          width: 100%;
-          max-width: 440px;
-          min-height: 520px;
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          border-radius: var(--border-radius-lg);
-          position: relative;
-          overflow: hidden;
-        }
-        .onboarding-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .brand-logo {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          color: white;
-        }
-        .brand-logo strong {
-          color: var(--color-primary);
-        }
-        .skip-btn {
-          background: none;
-          border: none;
-          color: var(--text-secondary);
-          font-family: var(--font-main);
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: var(--transition-smooth);
-        }
-        .skip-btn:hover {
-          color: white;
-        }
-        .onboarding-body {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          margin: 2.5rem 0;
-          gap: 1rem;
-        }
-        .icon-sphere {
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          border: 1px solid;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 0.5rem;
-        }
-        .onboard-badge {
-          font-size: 0.68rem;
-          font-weight: 800;
-          padding: 0.25rem 0.6rem;
-          border-radius: 4px;
-          letter-spacing: 0.5px;
-        }
-        .onboarding-body h2 {
-          font-size: 1.35rem;
-          font-weight: 700;
-          color: white;
-          margin-top: 0.25rem;
-        }
-        .onboarding-body p {
-          font-size: 0.88rem;
-          color: var(--text-secondary);
-          line-height: 1.5;
-        }
-        .onboarding-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .indicator-row {
-          display: flex;
-          gap: 0.5rem;
-        }
-        .indicator-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          transition: var(--transition-smooth);
-        }
-        .indicator-dot.active {
-          width: 16px;
-          border-radius: 10px;
-        }
-        .onboard-next-btn {
-          box-shadow: none !important;
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        .bounce-on-mount {
-          animation: bounce 3s infinite ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }

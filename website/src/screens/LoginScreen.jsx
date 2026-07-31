@@ -32,15 +32,15 @@ export default function LoginScreen() {
     <div className="auth-wrapper">
       <div className="auth-card glass-panel">
         <div className="auth-logo">
-          <Activity size={32} color="#8b5cf6" className="auth-icon-spin" />
+          <Activity size={32} color="#8b5cf6" style={{ marginBottom: '0.5rem' }} />
           <h2>GUARDIAN<span>SYNC</span></h2>
           <p>Healthcare Wellness & Fatigue Tracking</p>
         </div>
 
         {error && (
-          <div className="auth-error glass-card">
+          <div className="auth-error glass-card" style={{ padding: '0.75rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
             <AlertCircle size={16} color="#ef4444" />
-            <span>{error}</span>
+            <span style={{ fontSize: '0.85rem', color: '#ef4444' }}>{error}</span>
           </div>
         )}
 
@@ -76,7 +76,7 @@ export default function LoginScreen() {
           </div>
 
           <div className="auth-links">
-            <label className="remember-me">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
               <input type="checkbox" defaultChecked /> Remember Me
             </label>
             <Link to="/forgot-password">Forgot Password?</Link>
