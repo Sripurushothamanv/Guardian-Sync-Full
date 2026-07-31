@@ -1,0 +1,16 @@
+# Dependencies & Build artifacts
+website/node_modules/
+website/dist/
+mobile/.dart_tool/
+mobile/.build/
+mobile/build/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/ios/Pods/
+mobile/ios/Runner.xcworkspace/
+
+# Environment & IDE
+.DS_Store
+*.log
+.vscode/
+.idea/
