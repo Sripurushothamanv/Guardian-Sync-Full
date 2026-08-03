@@ -99,16 +99,12 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
   }, [logs]);
 
-  // Robust profileComplete check: true if profileCompleted flag is set OR if user fields exist
+  // Robust profileComplete check: true if user is logged in
   const profileComplete = !!(
     user && (
       user.profileCompleted === true ||
-      (
-        user.name && user.name.trim() !== '' &&
-        user.role && user.role.trim() !== '' &&
-        user.hospital && user.hospital.trim() !== '' &&
-        user.department && user.department.trim() !== ''
-      )
+      user.uid ||
+      (user.name && user.name.trim() !== '')
     )
   );
 
@@ -124,7 +120,7 @@ export const AppProvider = ({ children }) => {
           try {
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
             if (userDoc.exists()) {
-              const userData = { uid: firebaseUser.uid, ...userDoc.data() };
+              const userData = { uid: firebaseUser.uid, profileCompleted: true, ...userDoc.data() };
               setUser(userData);
               localStorage.setItem('guardian_user', JSON.stringify(userData));
             } else {
@@ -132,13 +128,13 @@ export const AppProvider = ({ children }) => {
                 if (prev && prev.uid === firebaseUser.uid) return prev;
                 const baseUser = {
                   uid: firebaseUser.uid,
-                  name: firebaseUser.displayName || '',
+                  name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Healthcare Worker',
                   email: firebaseUser.email || '',
                   phoneNumber: firebaseUser.phoneNumber || '',
-                  role: '',
+                  role: 'Doctor',
                   hospital: '',
                   department: '',
-                  profileCompleted: false
+                  profileCompleted: true
                 };
                 localStorage.setItem('guardian_user', JSON.stringify(baseUser));
                 return baseUser;
@@ -154,9 +150,7 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // ==========================================
-  // REAL-TIME 2-WAY FIRESTORE LISTENERS
-  // ==========================================
+  // Real-time 2-way Firestore Listeners
   useEffect(() => {
     if (!user || !user.uid) return;
 
@@ -173,7 +167,6 @@ export const AppProvider = ({ children }) => {
             fetchedLogs.push({
               _id: docSnap.id,
               ...data,
-              // Normalize timestamps
               timestamp: data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate().toISOString() : data.timestamp) : (data.createdAt || new Date().toISOString())
             });
           });
@@ -216,33 +209,40 @@ export const AppProvider = ({ children }) => {
   });
 
   // ==========================================
-  // AUTHENTICATION APIs — EMAIL & PHONE AUTH
+  // AUTHENTICATION APIs — SINGLE UNIFIED PROFILE REGISTRATION
   // ==========================================
 
-  const register = async (email, password) => {
+  const register = async (name, email, password, role = 'Doctor', hospital = '', department = '') => {
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCred.user;
       const freshToken = await firebaseUser.getIdToken();
       
-      const baseUser = {
+      const fullUserData = {
         uid: firebaseUser.uid,
-        name: '',
-        email: firebaseUser.email,
+        name: name || firebaseUser.displayName || 'Healthcare Worker',
+        email: firebaseUser.email || email,
         phoneNumber: '',
-        role: '',
-        hospital: '',
-        department: '',
-        profileCompleted: false,
+        role: role || 'Doctor',
+        hospital: hospital || '',
+        department: department || '',
+        profileCompleted: true,
         sleepGoal: 8,
         caffeineLimit: 400,
         waterGoal: 3000
       };
 
+      // Write user profile document to Firestore users/{uid}
+      try {
+        await setDoc(doc(db, 'users', firebaseUser.uid), fullUserData, { merge: true });
+      } catch (err) {
+        console.warn('Firestore user profile write error:', err);
+      }
+
       setToken(freshToken);
-      setUser(baseUser);
+      setUser(fullUserData);
       localStorage.setItem('guardian_token', freshToken);
-      localStorage.setItem('guardian_user', JSON.stringify(baseUser));
+      localStorage.setItem('guardian_user', JSON.stringify(fullUserData));
       return { success: true };
     } catch (err) {
       return { success: false, error: mapFirebaseError(err.code) };
@@ -256,19 +256,19 @@ export const AppProvider = ({ children }) => {
       const freshToken = await firebaseUser.getIdToken();
       let userData = {
         uid: firebaseUser.uid,
-        name: firebaseUser.displayName || '',
+        name: firebaseUser.displayName || email.split('@')[0] || 'Healthcare Worker',
         email: firebaseUser.email || email,
         phoneNumber: firebaseUser.phoneNumber || '',
-        role: '',
+        role: 'Doctor',
         hospital: '',
         department: '',
-        profileCompleted: false
+        profileCompleted: true
       };
 
       try {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
-          userData = { ...userData, ...userDoc.data() };
+          userData = { ...userData, profileCompleted: true, ...userDoc.data() };
         }
       } catch (_) {}
 
@@ -309,7 +309,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const confirmPhoneOtp = async (confirmationResult, otpCode) => {
+  const confirmPhoneOtp = async (confirmationResult, otpCode, profileData = {}) => {
     try {
       const userCred = await confirmationResult.confirm(otpCode);
       const firebaseUser = userCred.user;
@@ -317,19 +317,21 @@ export const AppProvider = ({ children }) => {
 
       let userData = {
         uid: firebaseUser.uid,
-        name: firebaseUser.displayName || '',
+        name: profileData.name || firebaseUser.displayName || 'Healthcare Worker',
         email: firebaseUser.email || '',
         phoneNumber: firebaseUser.phoneNumber || '',
-        role: '',
-        hospital: '',
-        department: '',
-        profileCompleted: false
+        role: profileData.role || 'Doctor',
+        hospital: profileData.hospital || '',
+        department: profileData.department || '',
+        profileCompleted: true
       };
 
       try {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
-          userData = { ...userData, ...userDoc.data() };
+          userData = { ...userData, profileCompleted: true, ...userDoc.data() };
+        } else {
+          await setDoc(doc(db, 'users', firebaseUser.uid), userData, { merge: true });
         }
       } catch (_) {}
 

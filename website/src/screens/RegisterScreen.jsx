@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../AppContext';
-import { Lock, Mail, Phone, Activity, AlertCircle, KeyRound } from 'lucide-react';
+import { User, Mail, Lock, Building, Shield, Activity, Phone, KeyRound, AlertCircle } from 'lucide-react';
 
 export default function RegisterScreen() {
   const { register, setupRecaptcha, sendPhoneOtp, confirmPhoneOtp } = useContext(AppContext);
@@ -9,12 +9,15 @@ export default function RegisterScreen() {
   // Auth Mode: 'email' or 'phone'
   const [authMode, setAuthMode] = useState('email');
 
-  // Email form states
+  // Form Fields
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('Doctor');
+  const [hospital, setHospital] = useState('');
+  const [department, setDepartment] = useState('');
 
-  // Phone form states
+  // Phone OTP States
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -30,14 +33,10 @@ export default function RegisterScreen() {
     }
   }, [authMode, otpSent]);
 
-  const handleEmailSubmit = async (e) => {
+  const handleEmailRegister = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('All fields are required');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Name, email, and password are required');
       return;
     }
     if (password.length < 6) {
@@ -48,20 +47,27 @@ export default function RegisterScreen() {
     setLoading(true);
     setError('');
 
-    const res = await register(email, password);
+    const res = await register(
+      name.trim(),
+      email.trim(),
+      password,
+      role,
+      hospital.trim(),
+      department.trim()
+    );
     setLoading(false);
 
     if (res.success) {
-      navigate('/create-profile');
+      navigate('/');
     } else {
-      setError(res.error || 'Registration failed');
+      setError(res.error || 'Registration failed. Please try again.');
     }
   };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 8) {
-      return setError('Please enter a valid phone number with country code (e.g. +919876543210)');
+    if (!name.trim() || !phoneNumber || phoneNumber.length < 8) {
+      return setError('Please enter your Name and a valid Phone Number with country code (e.g. +919876543210)');
     }
 
     setLoading(true);
@@ -88,11 +94,16 @@ export default function RegisterScreen() {
     setLoading(true);
     setError('');
 
-    const res = await confirmPhoneOtp(confirmationResult, otpCode.trim());
+    const res = await confirmPhoneOtp(confirmationResult, otpCode.trim(), {
+      name: name.trim(),
+      role,
+      hospital: hospital.trim(),
+      department: department.trim()
+    });
     setLoading(false);
 
     if (res.success) {
-      navigate('/create-profile');
+      navigate('/');
     } else {
       setError(res.error || 'Invalid verification code');
     }
@@ -100,11 +111,11 @@ export default function RegisterScreen() {
 
   return (
     <div className="auth-wrapper">
-      <div className="auth-card glass-panel">
-        <div className="auth-logo">
-          <Activity size={32} color="#06b6d4" style={{ marginBottom: '0.5rem' }} className="neon-glow-cyan" />
-          <h2>Create <span>Account</span></h2>
-          <p>Join Guardian-Sync to track shift fatigue & wellness</p>
+      <div className="auth-card glass-panel" style={{ maxWidth: '480px' }}>
+        {/* Top Logo / Icon matching screenshot */}
+        <div className="auth-logo" style={{ marginBottom: '1.25rem' }}>
+          <Activity size={38} color="#06b6d4" style={{ marginBottom: '0.35rem' }} className="neon-glow-cyan" />
+          <h2 style={{ fontSize: '1.6rem', fontWeight: '800' }}>Create Profile</h2>
         </div>
 
         {/* Tab Switcher: Email vs Phone */}
@@ -114,7 +125,7 @@ export default function RegisterScreen() {
             onClick={() => { setAuthMode('email'); setError(''); }}
             style={{
               flex: 1,
-              padding: '0.5rem',
+              padding: '0.45rem',
               border: 'none',
               borderRadius: '0.35rem',
               fontSize: '0.85rem',
@@ -125,14 +136,14 @@ export default function RegisterScreen() {
               transition: 'all 0.2s'
             }}
           >
-            ✉️ Email Sign Up
+            ✉️ Email Registration
           </button>
           <button
             type="button"
             onClick={() => { setAuthMode('phone'); setError(''); }}
             style={{
               flex: 1,
-              padding: '0.5rem',
+              padding: '0.45rem',
               border: 'none',
               borderRadius: '0.35rem',
               fontSize: '0.85rem',
@@ -143,7 +154,7 @@ export default function RegisterScreen() {
               transition: 'all 0.2s'
             }}
           >
-            📱 Phone OTP Sign Up
+            📱 Mobile Phone OTP
           </button>
         </div>
 
@@ -157,14 +168,29 @@ export default function RegisterScreen() {
         <div id="recaptcha-register-container"></div>
 
         {authMode === 'email' ? (
-          <form onSubmit={handleEmailSubmit} className="auth-form">
+          <form onSubmit={handleEmailRegister} className="auth-form" style={{ gap: '1rem' }}>
+            {/* Full Name */}
             <div className="form-group-auth">
-              <label>Email Address</label>
+              <div className="input-with-icon">
+                <User size={16} className="input-icon" />
+                <input 
+                  type="text" 
+                  placeholder="Full Name" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  className="input-field" 
+                  required 
+                />
+              </div>
+            </div>
+
+            {/* Email Address */}
+            <div className="form-group-auth">
               <div className="input-with-icon">
                 <Mail size={16} className="input-icon" />
                 <input 
                   type="email" 
-                  placeholder="sarah@hospital.org" 
+                  placeholder="Email Address" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   className="input-field" 
@@ -173,13 +199,13 @@ export default function RegisterScreen() {
               </div>
             </div>
 
+            {/* Password */}
             <div className="form-group-auth">
-              <label>Password</label>
               <div className="input-with-icon">
                 <Lock size={16} className="input-icon" />
                 <input 
                   type="password" 
-                  placeholder="••••••••" 
+                  placeholder="Password" 
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   className="input-field" 
@@ -188,48 +214,149 @@ export default function RegisterScreen() {
               </div>
             </div>
 
+            {/* Role Selector matching dropdown screenshot */}
             <div className="form-group-auth">
-              <label>Confirm Password</label>
               <div className="input-with-icon">
-                <Lock size={16} className="input-icon" />
+                <Shield size={16} className="input-icon" />
+                <select
+                  value={role}
+                  onChange={e => setRole(e.target.value)}
+                  className="input-field"
+                  style={{ backgroundColor: '#161C36' }}
+                >
+                  <option value="Doctor">👨‍⚕️ Doctor</option>
+                  <option value="Nurse">👩‍⚕️ Nurse</option>
+                  <option value="Intern">🩺 Medical Intern</option>
+                  <option value="Night-Shift Staff">🌙 Night-Shift Staff</option>
+                  <option value="Paramedic">🚑 Paramedic</option>
+                  <option value="Surgeon">🏥 Surgeon</option>
+                  <option value="Technician">🔬 Technician</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Hospital / Clinic */}
+            <div className="form-group-auth">
+              <div className="input-with-icon">
+                <Building size={16} className="input-icon" />
                 <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={confirmPassword} 
-                  onChange={e => setConfirmPassword(e.target.value)} 
+                  type="text" 
+                  placeholder="Hospital / Clinic" 
+                  value={hospital} 
+                  onChange={e => setHospital(e.target.value)} 
                   className="input-field" 
-                  required 
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary auth-submit-btn" style={{ backgroundColor: '#06b6d4' }} disabled={loading}>
-              {loading ? 'Creating Account...' : 'Continue to Profile Setup'}
+            {/* Department */}
+            <div className="form-group-auth">
+              <div className="input-with-icon">
+                <Activity size={16} className="input-icon" />
+                <input 
+                  type="text" 
+                  placeholder="Department" 
+                  value={department} 
+                  onChange={e => setDepartment(e.target.value)} 
+                  className="input-field" 
+                />
+              </div>
+            </div>
+
+            {/* Register Profile Button matching screenshot */}
+            <button 
+              type="submit" 
+              className="btn-primary auth-submit-btn" 
+              style={{ backgroundColor: '#06b6d4', padding: '0.85rem', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }} 
+              disabled={loading}
+            >
+              {loading ? 'Creating Profile...' : 'Register Profile'}
             </button>
           </form>
         ) : (
           !otpSent ? (
-            <form onSubmit={handleSendOtp} className="auth-form">
+            <form onSubmit={handleSendOtp} className="auth-form" style={{ gap: '1rem' }}>
               <div className="form-group-auth">
-                <label>Phone Number (with Country Code)</label>
+                <div className="input-with-icon">
+                  <User size={16} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Full Name" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    className="input-field" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-auth">
                 <div className="input-with-icon">
                   <Phone size={16} className="input-icon" />
                   <input 
                     type="tel" 
-                    placeholder="+919876543210 or +12025550123" 
+                    placeholder="Mobile Number (e.g. +919876543210)" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="input-field" 
                     required 
                   />
                 </div>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>
-                  Include country code prefix e.g. +91 or +1
-                </span>
               </div>
 
-              <button type="submit" className="btn-primary auth-submit-btn" style={{ backgroundColor: '#8b5cf6' }} disabled={loading}>
-                {loading ? 'Sending OTP Code...' : 'Send SMS Verification Code'}
+              <div className="form-group-auth">
+                <div className="input-with-icon">
+                  <Shield size={16} className="input-icon" />
+                  <select
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    className="input-field"
+                    style={{ backgroundColor: '#161C36' }}
+                  >
+                    <option value="Doctor">👨‍⚕️ Doctor</option>
+                    <option value="Nurse">👩‍⚕️ Nurse</option>
+                    <option value="Intern">🩺 Medical Intern</option>
+                    <option value="Night-Shift Staff">🌙 Night-Shift Staff</option>
+                    <option value="Paramedic">🚑 Paramedic</option>
+                    <option value="Surgeon">🏥 Surgeon</option>
+                    <option value="Technician">🔬 Technician</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group-auth">
+                <div className="input-with-icon">
+                  <Building size={16} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Hospital / Clinic" 
+                    value={hospital} 
+                    onChange={e => setHospital(e.target.value)} 
+                    className="input-field" 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-auth">
+                <div className="input-with-icon">
+                  <Activity size={16} className="input-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="Department" 
+                    value={department} 
+                    onChange={e => setDepartment(e.target.value)} 
+                    className="input-field" 
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-primary auth-submit-btn" 
+                style={{ backgroundColor: '#8b5cf6', padding: '0.85rem', fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }} 
+                disabled={loading}
+              >
+                {loading ? 'Sending SMS OTP...' : 'Send OTP & Register Profile'}
               </button>
             </form>
           ) : (
@@ -254,7 +381,7 @@ export default function RegisterScreen() {
               </div>
 
               <button type="submit" className="btn-primary auth-submit-btn" style={{ backgroundColor: '#10b981' }} disabled={loading}>
-                {loading ? 'Verifying OTP...' : 'Verify OTP & Continue'}
+                {loading ? 'Verifying OTP...' : 'Verify OTP & Complete Registration'}
               </button>
 
               <button 
@@ -262,14 +389,14 @@ export default function RegisterScreen() {
                 onClick={() => setOtpSent(false)} 
                 style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.5rem' }}
               >
-                ← Change Phone Number
+                ← Change Mobile Number
               </button>
             </form>
           )
         )}
 
-        <div className="auth-footer">
-          Already have an account? <Link to="/login">Sign In</Link>
+        <div className="auth-footer" style={{ marginTop: '1.25rem' }}>
+          Already have an account? <Link to="/login" style={{ color: '#06b6d4', fontWeight: 'bold' }}>Sign In</Link>
         </div>
       </div>
     </div>
