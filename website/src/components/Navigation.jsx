@@ -14,7 +14,9 @@ import {
   Bot, 
   Target, 
   User, 
-  LogOut 
+  LogOut,
+  BrainCircuit,
+  HeartPulse
 } from 'lucide-react';
 
 export default function Navigation() {
@@ -82,6 +84,20 @@ export default function Navigation() {
         })}>
           <Flame size={18} color="#f97316" />
           <span>Burnout Index</span>
+        </NavLink>
+
+        <NavLink to="/sleep-analyzer" style={({ isActive }) => ({
+          display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.85rem', borderRadius: '0.5rem', textDecoration: 'none', color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)', backgroundColor: isActive ? 'rgba(139, 92, 246, 0.25)' : 'transparent', fontWeight: isActive ? '600' : '400'
+        })}>
+          <BrainCircuit size={18} color="#8b5cf6" className="neon-glow-purple" />
+          <span>Sleep Analyzer</span>
+        </NavLink>
+
+        <NavLink to="/recovery" style={({ isActive }) => ({
+          display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.85rem', borderRadius: '0.5rem', textDecoration: 'none', color: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)', backgroundColor: isActive ? 'rgba(139, 92, 246, 0.25)' : 'transparent', fontWeight: isActive ? '600' : '400'
+        })}>
+          <HeartPulse size={18} color="#10b981" className="neon-glow-emerald" />
+          <span>Recovery & Nap</span>
         </NavLink>
 
         <NavLink to="/ai-chat" style={({ isActive }) => ({

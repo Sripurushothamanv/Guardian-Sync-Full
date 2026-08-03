@@ -1,18 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-dark: #070913;
-  --bg-card: rgba(22, 28, 54, 0.65);
-  --bg-card-hover: rgba(30, 38, 72, 0.8);
+  --bg-dark: #0C0F20;
+  --bg-card: rgba(22, 28, 54, 0.75);
+  --bg-card-solid: #161C36;
+  --bg-card-hover: rgba(30, 38, 72, 0.85);
   --accent-purple: #8b5cf6;
   --accent-cyan: #06b6d4;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
   --accent-rose: #ef4444;
+  --accent-pink: #ec4899;
   --text-main: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.65);
+  --text-dim: rgba(255, 255, 255, 0.4);
   --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(139, 92, 246, 0.25);
   --shadow-glow: 0 8px 32px 0 rgba(139, 92, 246, 0.15);
+  --shadow-card: 0 4px 24px 0 rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -33,38 +38,111 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Glassmorphism Containers */
+/* ==========================================
+   KEYFRAME ANIMATIONS
+   ========================================== */
+
+@keyframes neonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glowBorder {
+  0%, 100% { border-color: rgba(139, 92, 246, 0.3); }
+  50% { border-color: rgba(139, 92, 246, 0.6); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ==========================================
+   GLASSMORPHISM CONTAINERS
+   ========================================== */
+
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass);
   border-radius: 1rem;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: var(--shadow-card);
+  animation: fadeSlideIn 0.35s ease-out;
 }
 
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.25s ease-in-out;
 }
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: var(--border-glow);
   transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15);
 }
 
-/* Layout Grid */
+/* ==========================================
+   NEON GLOW UTILITIES
+   ========================================== */
+
+.neon-glow-purple {
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
+}
+
+.neon-glow-cyan {
+  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+}
+
+.neon-glow-emerald {
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+}
+
+.neon-glow-amber {
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+}
+
+.neon-glow-rose {
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
+}
+
+/* ==========================================
+   LAYOUT GRID
+   ========================================== */
+
 .app-container {
   display: flex;
   min-height: 100vh;
+  background: var(--bg-dark);
 }
 
 .sidebar {
   width: 260px;
-  background: rgba(13, 17, 34, 0.95);
+  background: rgba(12, 15, 32, 0.97);
   border-right: 1px solid var(--border-glass);
   padding: 1.5rem 1rem;
   display: flex;
@@ -72,6 +150,7 @@ h1, h2, h3, h4, h5, h6 {
   position: fixed;
   height: 100vh;
   z-index: 50;
+  backdrop-filter: blur(12px);
 }
 
 .main-content {
@@ -79,9 +158,14 @@ h1, h2, h3, h4, h5, h6 {
   margin-left: 260px;
   padding: 2rem;
   max-width: 1400px;
+  background: var(--bg-dark);
+  min-height: 100vh;
 }
 
-/* Buttons */
+/* ==========================================
+   BUTTONS
+   ========================================== */
+
 .btn-primary {
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   color: white;
@@ -91,7 +175,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   font-family: 'Outfit', sans-serif;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
 }
 
@@ -101,37 +185,125 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
 }
 
-/* Inputs */
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-glow-export {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #6d28d9 100%);
+  color: white;
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  padding: 0.75rem 1.75rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.2);
+  transition: all 0.3s ease;
+  animation: glowBorder 2s ease-in-out infinite;
+}
+
+.btn-glow-export:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.7), 0 0 60px rgba(139, 92, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   INPUTS & FORMS
+   ========================================== */
+
 .input-field {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(12, 15, 32, 0.9);
   border: 1px solid var(--border-glass);
   border-radius: 0.5rem;
   color: white;
   font-size: 0.95rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.25s, box-shadow 0.25s;
 }
 
 .input-field:focus {
   border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
 }
 
-/* Auth Wrappers */
+.input-field::placeholder {
+  color: var(--text-dim);
+}
+
+textarea.input-field {
+  resize: vertical;
+  min-height: 80px;
+  padding: 0.75rem 1rem;
+}
+
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+/* Toggle / Checkbox */
+.toggle-checkbox {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid var(--border-glass);
+}
+
+.toggle-checkbox::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle-checkbox:checked {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+}
+
+.toggle-checkbox:checked::after {
+  transform: translateX(20px);
+}
+
+/* ==========================================
+   AUTH WRAPPERS
+   ========================================== */
+
 .auth-wrapper {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%),
-              radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 40%);
+  background: var(--bg-dark);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05), transparent 50%);
 }
 
 .auth-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   padding: 2.5rem;
 }
 
@@ -179,6 +351,7 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   left: 0.85rem;
   color: rgba(255, 255, 255, 0.4);
+  z-index: 1;
 }
 
 .auth-links {
@@ -209,4 +382,179 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--accent-purple);
   text-decoration: none;
   font-weight: 600;
+}
+
+/* ==========================================
+   TOAST NOTIFICATION
+   ========================================== */
+
+.toast-error {
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.6rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+.toast-success {
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.6rem;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+/* ==========================================
+   BADGE UTILITIES
+   ========================================== */
+
+.badge-neon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.badge-time {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+}
+
+.badge-date {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #67e8f9;
+}
+
+.badge-status {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.badge-active {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.badge-completed {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+}
+
+/* ==========================================
+   PROGRESS BAR
+   ========================================== */
+
+.progress-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ==========================================
+   RECHARTS CUSTOM STYLING
+   ========================================== */
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+
+.recharts-text {
+  fill: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* ==========================================
+   PRINT STYLES (PDF Export)
+   ========================================== */
+
+@media print {
+  body {
+    background: #0C0F20 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sidebar, .btn-glow-export, .btn-primary {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 1rem !important;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+  }
+  .main-content {
+    margin-left: 220px;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
 }

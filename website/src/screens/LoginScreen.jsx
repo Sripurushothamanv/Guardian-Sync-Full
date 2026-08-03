@@ -32,15 +32,15 @@ export default function LoginScreen() {
     <div className="auth-wrapper">
       <div className="auth-card glass-panel">
         <div className="auth-logo">
-          <Activity size={32} color="#8b5cf6" style={{ marginBottom: '0.5rem' }} />
+          <Activity size={32} color="#8b5cf6" style={{ marginBottom: '0.5rem' }} className="neon-glow-purple" />
           <h2>GUARDIAN<span>SYNC</span></h2>
           <p>Healthcare Wellness & Fatigue Tracking</p>
         </div>
 
         {error && (
-          <div className="auth-error glass-card" style={{ padding: '0.75rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-            <AlertCircle size={16} color="#ef4444" />
-            <span style={{ fontSize: '0.85rem', color: '#ef4444' }}>{error}</span>
+          <div className="toast-error">
+            <AlertCircle size={18} />
+            <span>{error}</span>
           </div>
         )}
 
@@ -77,18 +77,18 @@ export default function LoginScreen() {
 
           <div className="auth-links">
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
-              <input type="checkbox" defaultChecked /> Remember Me
+              <input type="checkbox" defaultChecked style={{ accentColor: '#8b5cf6' }} /> Remember Me
             </label>
             <Link to="/forgot-password">Forgot Password?</Link>
           </div>
 
           <button type="submit" className="btn-primary auth-submit-btn" disabled={loading}>
-            {loading ? 'Logging in...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
         <div className="auth-footer">
-          Don't have an account? <Link to="/onboarding">Get Started</Link>
+          Don't have an account? <Link to="/register">Create Account</Link>
         </div>
       </div>
     </div>

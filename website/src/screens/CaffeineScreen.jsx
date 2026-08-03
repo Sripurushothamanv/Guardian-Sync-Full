@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import AIVoiceBar from '../components/AIVoiceBar';
-import { Coffee, Info, Plus, Minus } from 'lucide-react';
+import { Coffee, Info, Plus, Minus, Clock, Calendar } from 'lucide-react';
 
 export default function CaffeineScreen() {
   const { addLog, logs, dashboardData } = useContext(AppContext);
@@ -29,15 +28,27 @@ export default function CaffeineScreen() {
     setLoading(false);
   };
 
+  const formatBadgeTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  const formatBadgeDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Persistent AI Voice & Text Bar */}
-      <AIVoiceBar placeholder="Speak or type e.g. 'Drank 2 cups of espresso', 'Had a red bull energy drink'..." />
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Coffee size={28} color="#f59e0b" />
+            <Coffee size={28} color="#f59e0b" className="neon-glow-amber" />
             <div>
               <h2 style={{ fontSize: '1.4rem' }}>Log Caffeine Intake</h2>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>5-Hour Half-Life Exponential Decay Tracking</p>
@@ -71,7 +82,7 @@ export default function CaffeineScreen() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" style={{ backgroundColor: '#f59e0b', color: '#0C0F20' }} disabled={loading}>
               {loading ? 'Logging...' : 'Save Caffeine Entry'}
             </button>
           </form>
@@ -90,16 +101,23 @@ export default function CaffeineScreen() {
             </p>
           </div>
 
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>Today's Caffeine Logs</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto' }}>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>Caffeine Entry History</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '360px', overflowY: 'auto' }}>
             {logs.caffeine && logs.caffeine.length > 0 ? (
               logs.caffeine.map((log, i) => (
                 <div key={i} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{log.beverage}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '0.95rem', display: 'block' }}>{log.beverage}</span>
+                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem' }}>
+                      <span className="badge-neon badge-time">
+                        <Clock size={10} /> {formatBadgeTime(log.timestamp)}
+                      </span>
+                      <span className="badge-neon badge-date">
+                        <Calendar size={10} /> {formatBadgeDate(log.timestamp)}
+                      </span>
+                    </div>
                   </div>
-                  <span style={{ fontWeight: 'bold', color: '#f59e0b' }}>+{log.mgAmount} mg</span>
+                  <span style={{ fontWeight: 'bold', color: '#f59e0b', fontSize: '1.1rem' }}>+{log.mgAmount} mg</span>
                 </div>
               ))
             ) : (

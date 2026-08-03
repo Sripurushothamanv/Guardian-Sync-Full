@@ -1,7 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../AppContext';
-import AIVoiceBar from '../components/AIVoiceBar';
-import { Utensils, Droplets } from 'lucide-react';
+import { Utensils, Droplets, Sparkles } from 'lucide-react';
 
 export default function NutritionScreen() {
   const { addLog, logs } = useContext(AppContext);
@@ -12,19 +11,91 @@ export default function NutritionScreen() {
   const [carbs, setCarbs] = useState('45');
   const [fats, setFats] = useState('10');
   const [waterVolume, setWaterVolume] = useState('250');
+  const [autoPredicted, setAutoPredicted] = useState(false);
+
+  // Macro Estimation Database
+  const macroDatabase = [
+    { keywords: ['egg', 'eggs', 'scrambled'], c: 150, p: 12, car: 2, f: 10 },
+    { keywords: ['toast', 'bread'], c: 120, p: 4, car: 22, f: 2 },
+    { keywords: ['idli', 'idly'], c: 70, p: 2, car: 14, f: 1 },
+    { keywords: ['sambar', 'sambhar'], c: 110, p: 4, car: 18, f: 3 },
+    { keywords: ['dosa', 'dosai'], c: 180, p: 4, car: 28, f: 6 },
+    { keywords: ['masala dosa'], c: 280, p: 6, car: 42, f: 9 },
+    { keywords: ['chapati', 'roti', 'phulka'], c: 100, p: 3, car: 18, f: 3 },
+    { keywords: ['curd rice'], c: 220, p: 6, car: 32, f: 7 },
+    { keywords: ['chicken', 'grilled chicken'], c: 260, p: 32, car: 0, f: 12 },
+    { keywords: ['sandwich'], c: 320, p: 14, car: 36, f: 12 },
+    { keywords: ['salad'], c: 120, p: 3, car: 12, f: 6 },
+    { keywords: ['rice', 'steamed rice'], c: 200, p: 4, car: 44, f: 1 },
+    { keywords: ['biryani', 'chicken biryani'], c: 450, p: 24, car: 55, f: 16 },
+    { keywords: ['paneer', 'paneer butter'], c: 380, p: 18, car: 14, f: 28 },
+    { keywords: ['dal', 'dal tadka'], c: 180, p: 9, car: 26, f: 5 },
+    { keywords: ['oats', 'oatmeal'], c: 190, p: 6, car: 32, f: 4 },
+    { keywords: ['apple', 'fruit'], c: 80, p: 0, car: 20, f: 0 },
+    { keywords: ['banana'], c: 105, p: 1, car: 27, f: 0 },
+    { keywords: ['burger'], c: 480, p: 22, car: 42, f: 24 },
+    { keywords: ['pizza'], c: 300, p: 12, car: 34, f: 12 },
+    { keywords: ['poha'], c: 180, p: 3, car: 32, f: 5 },
+    { keywords: ['upma'], c: 190, p: 4, car: 30, f: 6 }
+  ];
+
+  // Auto Macro Estimator logic
+  useEffect(() => {
+    if (!foodItem.trim()) {
+      setAutoPredicted(false);
+      return;
+    }
+
+    const norm = foodItem.toLowerCase();
+    
+    // Extract multiplier quantity (e.g., '2 eggs', '3 idli')
+    let quantity = 1;
+    const qtyMatch = norm.match(/^(\d+)\s+/);
+    if (qtyMatch) {
+      quantity = parseInt(qtyMatch[1], 10) || 1;
+    }
+
+    let matchedCalories = 0;
+    let matchedProtein = 0;
+    let matchedCarbs = 0;
+    let matchedFats = 0;
+    let matchCount = 0;
+
+    macroDatabase.forEach(item => {
+      const match = item.keywords.some(kw => norm.includes(kw));
+      if (match) {
+        matchedCalories += item.c;
+        matchedProtein += item.p;
+        matchedCarbs += item.car;
+        matchedFats += item.f;
+        matchCount++;
+      }
+    });
+
+    if (matchCount > 0) {
+      setCalories(String(matchedCalories * quantity));
+      setProtein(String(matchedProtein * quantity));
+      setCarbs(String(matchedCarbs * quantity));
+      setFats(String(matchedFats * quantity));
+      setAutoPredicted(true);
+    } else {
+      setAutoPredicted(false);
+    }
+  }, [foodItem]);
 
   const handleMealSubmit = async (e) => {
     e.preventDefault();
     await addLog('nutrition', {
       mealCategory: category,
       foodItem,
-      calories: parseInt(calories, 10),
-      protein: parseInt(protein, 10),
-      carbs: parseInt(carbs, 10),
-      fats: parseInt(fats, 10),
+      calories: parseInt(calories, 10) || 0,
+      protein: parseInt(protein, 10) || 0,
+      carbs: parseInt(carbs, 10) || 0,
+      fats: parseInt(fats, 10) || 0,
       timestamp: new Date()
     });
     setFoodItem('');
+    setAutoPredicted(false);
   };
 
   const handleWaterSubmit = async () => {
@@ -42,16 +113,13 @@ export default function NutritionScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Persistent AI Voice & Text Bar */}
-      <AIVoiceBar placeholder="Speak or type e.g. 'Ate 2 plates of idli and sambar', 'Drank 500ml water'..." />
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Utensils size={28} color="#10b981" />
+            <Utensils size={28} color="#10b981" className="neon-glow-emerald" />
             <div>
               <h2 style={{ fontSize: '1.4rem' }}>Log Meal & Hydration</h2>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Track calories, macros & water intake</p>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Auto-macro estimation & water logging</p>
             </div>
           </div>
 
@@ -73,14 +141,29 @@ export default function NutritionScreen() {
 
           <form onSubmit={handleMealSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Food / Dish Name</label>
-              <input type="text" placeholder="e.g. Sambar Rice & Salad" value={foodItem} onChange={e => setFoodItem(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Food / Dish Name</label>
+                {autoPredicted && (
+                  <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 'bold' }}>
+                    <Sparkles size={12} /> Auto-Predicted Macros
+                  </span>
+                )}
+              </div>
+              <input 
+                type="text" 
+                placeholder="e.g. '2 Eggs and Toast' or 'Idli Sambar'" 
+                value={foodItem} 
+                onChange={e => setFoodItem(e.target.value)} 
+                className="input-field" 
+                style={{ paddingLeft: '1rem' }} 
+                required 
+              />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Category</label>
-                <select value={category} onChange={e => setCategory(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(15, 23, 42, 0.8)' }}>
+                <select value={category} onChange={e => setCategory(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(12, 15, 32, 0.9)' }}>
                   <option value="Breakfast">Breakfast</option>
                   <option value="Lunch">Lunch</option>
                   <option value="Dinner">Dinner</option>
@@ -109,7 +192,7 @@ export default function NutritionScreen() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', backgroundColor: '#10b981' }}>
               Log Meal Entry
             </button>
           </form>

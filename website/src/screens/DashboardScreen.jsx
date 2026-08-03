@@ -19,7 +19,8 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function DashboardScreen() {
-  const { dashboardData, user, addAILog, addLog } = useContext(AppContext);
+  const { dashboardData, user, addAILog, logHydration } = useContext(AppContext);
+  const [customWater, setCustomWater] = useState('250');
   const [aiInput, setAiInput] = useState('');
   const [aiFeedback, setAiFeedback] = useState(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -61,17 +62,10 @@ export default function DashboardScreen() {
     setAiInput('');
   };
 
-  const handleQuickWater = async (amount) => {
-    await addLog('nutrition', {
-      mealCategory: 'Hydration',
-      foodItem: 'Water',
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      volume: amount,
-      timestamp: new Date()
-    });
+  const handleLogWater = async (amount) => {
+    const ml = amount || parseInt(customWater, 10);
+    if (!ml || ml <= 0) return;
+    await logHydration(ml);
   };
 
   return (
@@ -80,7 +74,7 @@ export default function DashboardScreen() {
       <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-            Hello, <span style={{ color: '#8b5cf6' }}>{user ? user.name : 'Healthcare Worker'}</span>
+            Hello, <span style={{ color: '#8b5cf6' }}>{user ? user.name || 'Healthcare Worker' : 'Healthcare Worker'}</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>
             {user ? `${user.role || 'Doctor'} • ${user.hospital || 'City General Hospital'} (${user.department || 'ICU'})` : 'Healthcare Wellness & Fatigue Tracking'}
@@ -102,7 +96,7 @@ export default function DashboardScreen() {
       {/* Prominent AI Natural Language Quick Input Bar */}
       <div className="glass-panel" style={{ padding: '1.25rem', backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <Sparkles size={20} color="#06b6d4" />
+          <Sparkles size={20} color="#06b6d4" className="neon-glow-cyan" />
           <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>AI Natural Language Quick Logger</span>
           <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginLeft: 'auto' }}>Type anything e.g. "Slept 7 hours and drank 2 coffees"</span>
         </div>
@@ -249,25 +243,49 @@ export default function DashboardScreen() {
           <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>5-hr half-life metabolism</span>
         </div>
 
-        {/* Hydration Metric Card */}
+        {/* Custom Hydration Logger Card */}
         <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>HYDRATION TODAY</span>
-            <Droplets size={18} color="#06b6d4" />
+            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>HYDRATION LOGGER</span>
+            <Droplets size={18} color="#06b6d4" className="neon-glow-cyan" />
           </div>
-          <span style={{ fontSize: '1.5rem', fontWeight: '800' }}>{waterIntake} / {waterGoal} ml</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800' }}>{waterIntake} / {waterGoal} ml</span>
+            <span style={{ fontSize: '0.8rem', color: '#06b6d4', fontWeight: 'bold' }}>{waterPct}%</span>
+          </div>
           
-          <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '3px', margin: '0.5rem 0', overflow: 'hidden' }}>
-            <div style={{ width: `${waterPct}%`, height: '100%', backgroundColor: waterPct >= 100 ? '#10b981' : '#06b6d4', transition: 'width 0.3s' }} />
+          <div className="progress-bar-track" style={{ marginBottom: '0.75rem' }}>
+            <div className="progress-bar-fill" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 100 ? '#10b981' : '#06b6d4' }} />
           </div>
 
-          <div style={{ display: 'flex', gap: '0.35rem' }}>
-            <button type="button" onClick={() => handleQuickWater(250)} style={{ flex: 1, padding: '0.3rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
-              +250ml
-            </button>
-            <button type="button" onClick={() => handleQuickWater(500)} style={{ flex: 1, padding: '0.3rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
-              +500ml
-            </button>
+          {/* Preset Buttons + Custom Input Field + Log Water Button */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <button type="button" onClick={() => handleLogWater(250)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
+                +250ml
+              </button>
+              <button type="button" onClick={() => handleLogWater(500)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
+                +500ml
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+              <input 
+                type="number" 
+                value={customWater} 
+                onChange={e => setCustomWater(e.target.value)} 
+                placeholder="ml"
+                className="input-field" 
+                style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', height: '32px', textAlign: 'center' }} 
+              />
+              <button 
+                type="button" 
+                onClick={() => handleLogWater()} 
+                className="btn-primary" 
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: '32px', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', backgroundColor: '#06b6d4' }}
+              >
+                <Plus size={14} /> Log Water
+              </button>
+            </div>
           </div>
         </div>
 

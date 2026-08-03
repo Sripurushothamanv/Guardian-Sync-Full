@@ -7,6 +7,7 @@ import Navigation from './components/Navigation';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import CreateProfileScreen from './screens/CreateProfileScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import SleepScreen from './screens/SleepScreen';
@@ -25,12 +26,16 @@ import WellnessGoalsScreen from './screens/WellnessGoalsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 
-// Protected Layout wrapper
+// Protected Layout wrapper — redirects to /create-profile if profile incomplete
 const ProtectedLayout = ({ children }) => {
-  const { token } = useContext(AppContext);
+  const { token, profileComplete } = useContext(AppContext);
 
   if (!token) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!profileComplete) {
+    return <Navigate to="/create-profile" replace />;
   }
 
   return (
@@ -43,12 +48,31 @@ const ProtectedLayout = ({ children }) => {
   );
 };
 
-// Public Route Guard (redirect to Dashboard if logged in)
-const PublicRoute = ({ children }) => {
-  const { token } = useContext(AppContext);
+// Profile Gate — user must be authenticated but profile may be incomplete
+const ProfileGate = ({ children }) => {
+  const { token, profileComplete } = useContext(AppContext);
 
-  if (token) {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (profileComplete) {
     return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+// Public Route Guard (redirect to Dashboard if logged in with complete profile)
+const PublicRoute = ({ children }) => {
+  const { token, profileComplete } = useContext(AppContext);
+
+  if (token && profileComplete) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (token && !profileComplete) {
+    return <Navigate to="/create-profile" replace />;
   }
 
   return children;
@@ -62,6 +86,9 @@ function AppContent() {
       <Route path="/login" element={<PublicRoute><LoginScreen /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterScreen /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordScreen /></PublicRoute>} />
+
+      {/* Profile Completion Gate */}
+      <Route path="/create-profile" element={<ProfileGate><CreateProfileScreen /></ProfileGate>} />
 
       {/* Protected Pages wrapped in layout */}
       <Route path="/" element={<ProtectedLayout><DashboardScreen /></ProtectedLayout>} />

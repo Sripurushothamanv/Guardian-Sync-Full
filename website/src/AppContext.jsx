@@ -15,6 +15,21 @@ export const AppContext = createContext();
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+// Map Firebase error codes to user-friendly messages
+const mapFirebaseError = (code) => {
+  const map = {
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/user-not-found': 'No account found with this email address.',
+    'auth/email-already-in-use': 'An account with this email already exists.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Please check your connection.',
+    'auth/invalid-credential': 'Invalid email or password. Please try again.',
+  };
+  return map[code] || 'Authentication failed. Please try again.';
+};
+
 export const AppProvider = ({ children }) => {
   const [token, setToken] = useState(() => {
     try {
@@ -74,6 +89,15 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
   }, [logs]);
 
+  // Derive profileComplete from user data
+  const profileComplete = !!(
+    user &&
+    user.name && user.name.trim() !== '' &&
+    user.role && user.role.trim() !== '' &&
+    user.hospital && user.hospital.trim() !== '' &&
+    user.department && user.department.trim() !== ''
+  );
+
   // Subscribe to Firebase Authentication state change
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -91,9 +115,11 @@ export const AppProvider = ({ children }) => {
           } else {
             const baseUser = {
               uid: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Healthcare Worker',
+              name: firebaseUser.displayName || '',
               email: firebaseUser.email,
-              role: 'Healthcare Worker'
+              role: '',
+              hospital: '',
+              department: ''
             };
             setUser(prev => prev || baseUser);
             localStorage.setItem('guardian_user', JSON.stringify(baseUser));
@@ -112,110 +138,88 @@ export const AppProvider = ({ children }) => {
   });
 
   // ==========================================
-  // AUTHENTICATION APIs
+  // AUTHENTICATION APIs — STRICT FIREBASE ONLY
   // ==========================================
 
-  const register = async (name, email, password, role, department, hospital) => {
+  const register = async (email, password) => {
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCred.user;
-      if (firebaseUser) {
-        const userData = {
-          uid: firebaseUser.uid,
-          name,
-          email,
-          role,
-          department: department || '',
-          hospital: hospital || '',
-          sleepGoal: 8,
-          caffeineLimit: 400,
-          waterGoal: 3000
-        };
-
-        try {
-          await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-        } catch (_) {}
-
-        const freshToken = await firebaseUser.getIdToken();
-        setToken(freshToken);
-        setUser(userData);
-        localStorage.setItem('guardian_token', freshToken);
-        localStorage.setItem('guardian_user', JSON.stringify(userData));
-        return { success: true };
-      }
-    } catch (err) {
-      console.warn('Firebase registration error, fallback local:', err.message);
-      const mockUser = {
-        uid: 'mock_user_' + Date.now(),
-        name,
-        email,
-        role,
-        department,
-        hospital,
+      const freshToken = await firebaseUser.getIdToken();
+      
+      const baseUser = {
+        uid: firebaseUser.uid,
+        name: '',
+        email: firebaseUser.email,
+        role: '',
+        hospital: '',
+        department: '',
         sleepGoal: 8,
         caffeineLimit: 400,
         waterGoal: 3000
       };
-      setToken('mock_jwt_token_key');
-      setUser(mockUser);
-      localStorage.setItem('guardian_token', 'mock_jwt_token_key');
-      localStorage.setItem('guardian_user', JSON.stringify(mockUser));
+
+      setToken(freshToken);
+      setUser(baseUser);
+      localStorage.setItem('guardian_token', freshToken);
+      localStorage.setItem('guardian_user', JSON.stringify(baseUser));
       return { success: true };
+    } catch (err) {
+      return { success: false, error: mapFirebaseError(err.code) };
     }
+  };
+
+  const completeProfile = async (profileData) => {
+    if (!user || !user.uid) return { success: false, error: 'Not authenticated' };
+    
+    const updatedUser = {
+      ...user,
+      name: profileData.name,
+      role: profileData.role,
+      hospital: profileData.hospital,
+      department: profileData.department,
+      sleepGoal: 8,
+      caffeineLimit: 400,
+      waterGoal: 3000
+    };
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), updatedUser);
+    } catch (_) {}
+
+    setUser(updatedUser);
+    localStorage.setItem('guardian_user', JSON.stringify(updatedUser));
+    return { success: true };
   };
 
   const login = async (email, password) => {
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCred.user;
-      if (firebaseUser) {
-        const freshToken = await firebaseUser.getIdToken();
-        let userData = {
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || email.split('@')[0],
-          email: firebaseUser.email || email,
-          role: 'Healthcare Worker'
-        };
-
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            userData = { ...userData, ...userDoc.data() };
-          }
-        } catch (_) {}
-
-        setToken(freshToken);
-        setUser(userData);
-        localStorage.setItem('guardian_token', freshToken);
-        localStorage.setItem('guardian_user', JSON.stringify(userData));
-        return { success: true };
-      }
-    } catch (err) {
-      console.warn('Firebase login failed, checking fallback:', err.message);
-      const savedUser = JSON.parse(localStorage.getItem('guardian_user') || 'null');
-      if (savedUser && savedUser.email === email) {
-        setToken('mock_jwt_token_key');
-        setUser(savedUser);
-        localStorage.setItem('guardian_token', 'mock_jwt_token_key');
-        return { success: true };
-      }
-      
-      const mockUser = {
-        uid: 'mock_user_1',
-        name: 'Dr. Sarah Connor',
-        email,
-        role: 'Doctor',
-        department: 'ICU / Emergency',
-        hospital: 'City General Hospital',
-        sleepGoal: 8,
-        caffeineLimit: 400,
-        waterGoal: 3000
+      const freshToken = await firebaseUser.getIdToken();
+      let userData = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || '',
+        email: firebaseUser.email || email,
+        role: '',
+        hospital: '',
+        department: ''
       };
-      setToken('mock_jwt_token_key');
-      setUser(mockUser);
-      localStorage.setItem('guardian_token', 'mock_jwt_token_key');
-      localStorage.setItem('guardian_user', JSON.stringify(mockUser));
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          userData = { ...userData, ...userDoc.data() };
+        }
+      } catch (_) {}
+
+      setToken(freshToken);
+      setUser(userData);
+      localStorage.setItem('guardian_token', freshToken);
+      localStorage.setItem('guardian_user', JSON.stringify(userData));
       return { success: true };
+    } catch (err) {
+      return { success: false, error: mapFirebaseError(err.code) };
     }
   };
 
@@ -246,6 +250,25 @@ export const AppProvider = ({ children }) => {
     const updated = { ...user, ...profileData };
     setUser(updated);
     localStorage.setItem('guardian_user', JSON.stringify(updated));
+  };
+
+  // ==========================================
+  // HYDRATION LOGGER
+  // ==========================================
+
+  const logHydration = async (ml) => {
+    const amount = parseInt(ml, 10);
+    if (!amount || amount <= 0) return;
+    await addLog('nutrition', {
+      mealCategory: 'Hydration',
+      foodItem: 'Water',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+      volume: amount,
+      timestamp: new Date()
+    });
   };
 
   // 1:1 Calculations Engine matching Flutter app_state.dart
@@ -311,6 +334,9 @@ export const AppProvider = ({ children }) => {
       else if (type === 'On-Call') shiftImpact = 25;
       else if (type === 'Rotating') shiftImpact = 20;
       else shiftImpact = 10;
+
+      // Extra fatigue for no-break shifts
+      if (recentShift.noBreak) shiftImpact += 5;
 
       const isCurrent = now >= new Date(recentShift.startTime) && now <= new Date(recentShift.endTime);
       if (isCurrent) {
@@ -572,7 +598,8 @@ export const AppProvider = ({ children }) => {
       targetValue: Number(targetValue),
       currentValue: 0,
       completed: false,
-      isCustom: true
+      isCustom: true,
+      createdAt: new Date().toISOString()
     };
     setGoals(prev => [...prev, newGoal]);
   };
@@ -707,6 +734,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       token,
       user,
+      profileComplete,
       dashboardData,
       goals,
       notifications,
@@ -715,10 +743,12 @@ export const AppProvider = ({ children }) => {
       logs,
       login,
       register,
+      completeProfile,
       logout,
       updateProfile,
       addLog,
       addAILog,
+      logHydration,
       addGoal,
       editGoal,
       deleteGoal,
