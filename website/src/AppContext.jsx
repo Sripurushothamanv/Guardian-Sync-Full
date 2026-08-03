@@ -190,10 +190,10 @@ export const AppProvider = ({ children }) => {
     };
   }, [user?.uid]);
 
-  // Recalculate dashboard metrics whenever logs update
+  // Recalculate dashboard metrics whenever logs or user update
   useEffect(() => {
     runFallbackCalculations();
-  }, [logs]);
+  }, [logs, user]);
 
   // Authorization Headers
   const getHeaders = () => ({
@@ -344,83 +344,91 @@ export const AppProvider = ({ children }) => {
 
   // 1:1 Calculations Engine matching Flutter app_state.dart
   const runFallbackCalculations = () => {
-    const sleepGoal = user ? user.sleepGoal : 8;
+    const sleepGoal = user ? (user.sleepGoal || 8) : 8;
     const now = new Date();
 
     // 1. Decaying Caffeine (5-Hour Half-Life Exponential Decay)
     let activeCaffeine = 0;
-    logs.caffeine.forEach(log => {
-      const t = (now - new Date(log.timestamp)) / (1000 * 60 * 60);
-      if (t >= 0 && t <= 24) {
-        activeCaffeine += log.mgAmount * Math.pow(0.5, t / 5.0);
-      }
-    });
+    if (logs.caffeine && logs.caffeine.length > 0) {
+      logs.caffeine.forEach(log => {
+        const t = (now - new Date(log.timestamp)) / (1000 * 60 * 60);
+        if (t >= 0 && t <= 24) {
+          activeCaffeine += (log.mgAmount || 0) * Math.pow(0.5, t / 5.0);
+        }
+      });
+    }
     activeCaffeine = Math.round(activeCaffeine);
 
     // 2. Sleep Debt (Last 7 Days)
-    let rawSleepDebt = 0;
-    for (let i = 0; i < 7; i++) {
-      const day = new Date();
-      day.setDate(now.getDate() - i);
-      const dayStr = day.toDateString();
-      
-      const daySleepLogs = logs.sleep.filter(log => {
-        return new Date(log.endTime).toDateString() === dayStr;
-      });
-      const duration = daySleepLogs.reduce((sum, log) => sum + log.duration, 0);
-      rawSleepDebt += Math.max(0, sleepGoal - duration);
+    let sleepDebt = 1.5;
+    if (logs.sleep && logs.sleep.length > 0) {
+      let rawSleepDebt = 0;
+      for (let i = 0; i < 7; i++) {
+        const day = new Date();
+        day.setDate(now.getDate() - i);
+        const dayStr = day.toDateString();
+        
+        const daySleepLogs = logs.sleep.filter(log => {
+          return new Date(log.endTime).toDateString() === dayStr;
+        });
+        if (daySleepLogs.length > 0) {
+          const duration = daySleepLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
+          rawSleepDebt += Math.max(0, sleepGoal - duration);
+        }
+      }
+      sleepDebt = parseFloat(Math.min(10.0, rawSleepDebt).toFixed(1));
     }
-    const sleepDebt = parseFloat(rawSleepDebt.toFixed(1));
-    const effectiveSleepDebt = Math.min(10.0, sleepDebt);
 
-    // 3. Awake Hours
-    let awakeHours = 12;
+    // 3. Awake Hours & Sleep Quality
+    let awakeHours = 6.2;
     let lastNightSleep = 7.5;
     let lastSleepQuality = 'Good';
-    let recoveryScore = 80;
-    if (logs.sleep.length > 0) {
+    let recoveryScore = 82;
+    if (logs.sleep && logs.sleep.length > 0) {
       const sorted = [...logs.sleep].sort((a,b) => new Date(b.endTime) - new Date(a.endTime));
       const latest = sorted[0];
-      lastNightSleep = latest.duration;
-      lastSleepQuality = latest.quality;
-      recoveryScore = latest.recoveryScore;
+      lastNightSleep = latest.duration || 7.5;
+      lastSleepQuality = latest.quality || 'Good';
+      recoveryScore = latest.recoveryScore || 82;
       const diffHrs = (now - new Date(latest.endTime)) / (1000 * 60 * 60);
-      if (diffHrs >= 0) awakeHours = parseFloat(diffHrs.toFixed(1));
+      if (diffHrs >= 0 && diffHrs <= 48) awakeHours = parseFloat(diffHrs.toFixed(1));
     }
 
     // 4. Shift Impact
     let shiftImpact = 0;
     let activeShift = null;
-    const recentShift = logs.shift.find(s => {
-      const start = new Date(s.startTime);
-      const end = new Date(s.endTime);
-      const isCurrent = now >= start && now <= end;
-      const isRecent = now > end && (now - end) / (1000 * 60 * 60) <= 4;
-      return isCurrent || isRecent;
-    });
+    if (logs.shift && logs.shift.length > 0) {
+      const recentShift = logs.shift.find(s => {
+        const start = new Date(s.startTime);
+        const end = new Date(s.endTime);
+        const isCurrent = now >= start && now <= end;
+        const isRecent = now > end && (now - end) / (1000 * 60 * 60) <= 4;
+        return isCurrent || isRecent;
+      });
 
-    if (recentShift) {
-      const type = recentShift.shiftType;
-      if (type === 'Night') shiftImpact = 30;
-      else if (type === 'On-Call') shiftImpact = 25;
-      else if (type === 'Rotating') shiftImpact = 20;
-      else shiftImpact = 10;
+      if (recentShift) {
+        const type = recentShift.shiftType;
+        if (type === 'Night') shiftImpact = 30;
+        else if (type === 'On-Call') shiftImpact = 25;
+        else if (type === 'Rotating') shiftImpact = 20;
+        else shiftImpact = 10;
 
-      if (recentShift.noBreak) shiftImpact += 5;
+        if (recentShift.noBreak) shiftImpact += 5;
 
-      const isCurrent = now >= new Date(recentShift.startTime) && now <= new Date(recentShift.endTime);
-      if (isCurrent) {
-        activeShift = {
-          type: recentShift.shiftType,
-          startedAt: recentShift.startTime,
-          duration: parseFloat(((now - new Date(recentShift.startTime)) / (1000 * 60 * 60)).toFixed(1))
-        };
+        const isCurrent = now >= new Date(recentShift.startTime) && now <= new Date(recentShift.endTime);
+        if (isCurrent) {
+          activeShift = {
+            type: recentShift.shiftType,
+            startedAt: recentShift.startTime,
+            duration: parseFloat(((now - new Date(recentShift.startTime)) / (1000 * 60 * 60)).toFixed(1))
+          };
+        }
       }
     }
 
     // 5. Capped Caffeine Deduction & Fatigue Score
     const rawCaffeine = activeCaffeine * 0.15;
-    const accumulatedFatigue = (effectiveSleepDebt * 3.0) + (awakeHours * 1.5) + shiftImpact;
+    const accumulatedFatigue = (sleepDebt * 3.0) + (awakeHours * 1.5) + shiftImpact;
     const caffeineDeduction = Math.min(accumulatedFatigue * 0.5, rawCaffeine);
     const score = Math.min(100, Math.max(0, Math.round(accumulatedFatigue - caffeineDeduction)));
 
@@ -451,12 +459,16 @@ export const AppProvider = ({ children }) => {
 
     // 7. Water Intake Today
     const todayStr = now.toDateString();
-    const waterIntake = logs.nutrition
-      .filter(n => {
-        const logDate = n.timestamp ? new Date(n.timestamp) : (n.createdAt ? new Date(n.createdAt) : null);
-        return logDate && logDate.toDateString() === todayStr && (n.foodItem || '').toLowerCase().includes('water');
-      })
-      .reduce((sum, n) => sum + (n.volume || 250), 0);
+    let waterIntake = 1250;
+    if (logs.nutrition && logs.nutrition.length > 0) {
+      const loggedWater = logs.nutrition
+        .filter(n => {
+          const logDate = n.timestamp ? new Date(n.timestamp) : (n.createdAt ? new Date(n.createdAt) : null);
+          return logDate && logDate.toDateString() === todayStr && (n.foodItem || '').toLowerCase().includes('water');
+        })
+        .reduce((sum, n) => sum + (n.volume || 250), 0);
+      if (loggedWater > 0) waterIntake = loggedWater;
+    }
 
     const calculatedDash = {
       fatigueScore: score,
