@@ -45,15 +45,13 @@ jobs:
       - name: Build Vite App
         run: npm run build
 
-      # Option A: Deploy to gh-pages branch (for "Deploy from branch" setting)
-      - name: Deploy to gh-pages branch
+      - name: Deploy website/dist to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: website/dist
           branch: gh-pages
           clean: true
 
-      # Option B: Official GitHub Pages Artifact & Action Deployment (for "GitHub Actions" setting)
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
