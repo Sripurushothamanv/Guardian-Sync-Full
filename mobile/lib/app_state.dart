@@ -137,12 +137,64 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     if (isAuthenticated) {
+      _initFirestoreListeners();
       fetchDashboard();
       fetchWeekly();
       fetchGoals();
       fetchNotifications();
       fetchStreaks();
     }
+  }
+
+  StreamSubscription? _sleepSub;
+  StreamSubscription? _caffSub;
+  StreamSubscription? _shiftSub;
+  StreamSubscription? _nutrSub;
+
+  void _initFirestoreListeners() {
+    _sleepSub?.cancel();
+    _caffSub?.cancel();
+    _shiftSub?.cancel();
+    _nutrSub?.cancel();
+
+    if (_user == null || _user!['uid'] == null) return;
+    final uid = _user!['uid'].toString();
+
+    _sleepSub = _firebaseService.getLogStream(uid: uid, subcollection: 'sleep_logs').listen((snap) {
+      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+      if (items.isNotEmpty) {
+        _logs['sleep'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      }
+    });
+
+    _caffSub = _firebaseService.getLogStream(uid: uid, subcollection: 'caffeine_logs').listen((snap) {
+      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+      if (items.isNotEmpty) {
+        _logs['caffeine'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      }
+    });
+
+    _shiftSub = _firebaseService.getLogStream(uid: uid, subcollection: 'shift_logs').listen((snap) {
+      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+      if (items.isNotEmpty) {
+        _logs['shift'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      }
+    });
+
+    _nutrSub = _firebaseService.getLogStream(uid: uid, subcollection: 'nutrition_logs').listen((snap) {
+      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+      if (items.isNotEmpty) {
+        _logs['nutrition'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      }
+    });
   }
 
   // Save session
@@ -328,6 +380,7 @@ class AppState extends ChangeNotifier {
             : null;
         _isOffline = false;
         await _saveSession();
+        _initFirestoreListeners();
         notifyListeners();
         return true;
       }
@@ -536,6 +589,25 @@ class AppState extends ChangeNotifier {
     await _saveSession();
     runOfflineCalculations();
     notifyListeners();
+
+    // Write strictly to unified Cloud Firestore subcollection users/{uid}/{type}_logs
+    if (_user != null && _user!['uid'] != null) {
+      final uid = _user!['uid'].toString();
+      final subcollectionMap = {
+        'sleep': 'sleep_logs',
+        'caffeine': 'caffeine_logs',
+        'shift': 'shift_logs',
+        'nutrition': 'nutrition_logs',
+      };
+      final targetSubcollection = subcollectionMap[type];
+      if (targetSubcollection != null) {
+        _firebaseService.addFirestoreLog(
+          uid: uid,
+          subcollection: targetSubcollection,
+          logData: localLog,
+        );
+      }
+    }
 
     try {
       final endpoint = type == 'shift' ? 'shift' : type;

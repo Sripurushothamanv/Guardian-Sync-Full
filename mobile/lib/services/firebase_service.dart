@@ -211,6 +211,28 @@ class FirebaseService {
     };
   }
 
+  /// Write log to Firestore subcollection: users/{uid}/{subcollection}
+  Future<void> addFirestoreLog({
+    required String uid,
+    required String subcollection,
+    required Map<String, dynamic> logData,
+  }) async {
+    try {
+      await _db.collection('users').doc(uid).collection(subcollection).add({
+        ...logData,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
+  /// Real-time stream of log subcollection
+  Stream<QuerySnapshot<Map<String, dynamic>>> getLogStream({
+    required String uid,
+    required String subcollection,
+  }) {
+    return _db.collection('users').doc(uid).collection(subcollection).snapshots();
+  }
+
   /// Sign out
   Future<void> signOut() async {
     await _auth.signOut();
