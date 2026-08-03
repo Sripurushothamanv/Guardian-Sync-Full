@@ -67,7 +67,7 @@ class GuardianSyncApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/': (context) => const NavShell(),
+        '/dashboard': (context) => const NavShell(),
         '/sleep': (context) => const SleepScreen(),
         '/caffeine': (context) => const CaffeineScreen(),
         '/nutrition': (context) => const NutritionScreen(),
