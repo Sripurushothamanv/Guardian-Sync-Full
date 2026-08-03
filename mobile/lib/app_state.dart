@@ -241,6 +241,77 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
+  Future<void> sendPhoneOtp({
+    required String phoneNumber,
+    required Function(String verificationId) onCodeSent,
+    required Function(String error) onError,
+  }) async {
+    _lastAuthError = null;
+    await _firebaseService.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      onCodeSent: onCodeSent,
+      onAutoCompleted: (creds) async {
+        final token = await creds.user?.getIdToken();
+        _token = token ?? creds.user?.uid;
+        _user = {
+          'uid': creds.user?.uid,
+          'phoneNumber': creds.user?.phoneNumber ?? phoneNumber,
+          'name': creds.user?.displayName ?? 'Healthcare Worker',
+          'role': 'Doctor',
+          'profileCompleted': true,
+        };
+        await _saveSession();
+        notifyListeners();
+      },
+      onError: (err) {
+        _lastAuthError = err;
+        notifyListeners();
+        onError(err);
+      },
+    );
+  }
+
+  Future<bool> confirmPhoneOtp({
+    required String verificationId,
+    required String smsCode,
+    String name = '',
+    String role = 'Doctor',
+    String hospital = '',
+    String department = '',
+  }) async {
+    _lastAuthError = null;
+    try {
+      final result = await _firebaseService.signInWithPhoneOtp(
+        verificationId: verificationId,
+        smsCode: smsCode,
+        name: name,
+        role: role,
+        hospital: hospital,
+        department: department,
+      );
+
+      if (result.containsKey('token')) {
+        _token = result['token']?.toString();
+        _user = result['user'] is Map<String, dynamic>
+            ? result['user'] as Map<String, dynamic>
+            : null;
+        _isOffline = false;
+        await _saveSession();
+        notifyListeners();
+        return true;
+      }
+    } on FirebaseAuthException catch (e) {
+      _lastAuthError = FirebaseService.mapPhoneAuthError(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _lastAuthError = 'OTP verification failed: $e';
+      notifyListeners();
+      return false;
+    }
+    return false;
+  }
+
   Future<bool> login(String email, String password) async {
     _lastAuthError = null;
     // Authenticate purely via Firebase — no localhost API fallback

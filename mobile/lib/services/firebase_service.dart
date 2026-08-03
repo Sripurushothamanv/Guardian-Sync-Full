@@ -10,6 +10,125 @@ class FirebaseService {
 
   User? get currentUser => _auth.currentUser;
 
+  /// E.164 Phone Sanitizer: automatically prefixes +91 to raw 10-digit mobile numbers
+  static String sanitizePhoneNumber(String rawPhone) {
+    String clean = rawPhone.trim().replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (!clean.startsWith('+')) {
+      clean = '+91$clean';
+    }
+    return clean;
+  }
+
+  /// Maps FirebaseAuthException codes to user-friendly messages
+  static String mapPhoneAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-phone-number':
+        return 'The mobile number format is invalid. Please enter a valid 10-digit number or include country code (e.g. +919876543210).';
+      case 'quota-exceeded':
+        return 'SMS quota exceeded for today. Please use email login or try test numbers.';
+      case 'app-not-verified':
+        return 'App verification failed. Ensure SHA-1/SHA-256 fingerprints are added to Firebase Console.';
+      case 'captcha-check-failed':
+        return 'reCAPTCHA verification failed. Please try again.';
+      case 'too-many-requests':
+        return 'Too many SMS requests. Please try again later.';
+      case 'invalid-verification-code':
+        return 'The OTP verification code is incorrect. Please check and re-enter.';
+      case 'session-expired':
+        return 'The OTP session has expired. Please request a new OTP code.';
+      default:
+        return e.message ?? 'Phone authentication failed. Code: ${e.code}';
+    }
+  }
+
+  /// Send Phone OTP SMS using Firebase verifyPhoneNumber
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required Function(String verificationId) onCodeSent,
+    required Function(UserCredential creds) onAutoCompleted,
+    required Function(String errorMessage) onError,
+  }) async {
+    final sanitizedNumber = sanitizePhoneNumber(phoneNumber);
+
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: sanitizedNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          try {
+            final userCred = await _auth.signInWithCredential(credential);
+            onAutoCompleted(userCred);
+          } catch (e) {
+            onError('Auto verification sign-in failed.');
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          onError(mapPhoneAuthError(e));
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          onCodeSent(verificationId);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+        timeout: const Duration(seconds: 60),
+      );
+    } on FirebaseAuthException catch (e) {
+      onError(mapPhoneAuthError(e));
+    } catch (e) {
+      onError('Unable to request OTP: $e');
+    }
+  }
+
+  /// Verify OTP SMS code and sign in
+  Future<Map<String, dynamic>> signInWithPhoneOtp({
+    required String verificationId,
+    required String smsCode,
+    String name = '',
+    String role = 'Doctor',
+    String hospital = '',
+    String department = '',
+  }) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode.trim(),
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'Phone authentication failed.',
+      );
+    }
+
+    if (name.isNotEmpty) {
+      await user.updateDisplayName(name);
+    }
+
+    final userData = {
+      'uid': user.uid,
+      'name': name.isNotEmpty ? name : (user.displayName ?? 'Healthcare Worker'),
+      'phoneNumber': user.phoneNumber ?? '',
+      'email': user.email ?? '',
+      'role': role,
+      'hospital': hospital,
+      'department': department,
+      'profileCompleted': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await _db.collection('users').doc(user.uid).set(userData, SetOptions(merge: true));
+    } catch (_) {}
+
+    final token = await user.getIdToken();
+
+    return {
+      'token': token,
+      'user': userData,
+    };
+  }
+
   /// Register user with FirebaseAuth and create profile document in Firestore
   Future<UserCredential> registerUser({
     required String email,
@@ -26,11 +145,8 @@ class FirebaseService {
 
     final user = userCredential.user;
     if (user != null) {
-      // Update display name
       await user.updateDisplayName(name);
 
-      // Create user document in Cloud Firestore under users/{uid}
-      // Non-blocking: if Firestore fails, auth still succeeds
       try {
         await _db.collection('users').doc(user.uid).set({
           'uid': user.uid,
@@ -39,20 +155,17 @@ class FirebaseService {
           'role': role,
           'department': department ?? '',
           'hospital': hospital ?? '',
+          'profileCompleted': true,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         }).timeout(const Duration(seconds: 10));
-      } catch (_) {
-        // Firestore write failure is non-fatal; auth succeeded
-      }
+      } catch (_) {}
     }
 
     return userCredential;
   }
 
   /// Sign in user with FirebaseAuth and fetch user profile from Firestore.
-  /// Firestore profile fetch is optional — auth token is always returned
-  /// so a Firestore error will NOT prevent the user from logging in.
   Future<Map<String, dynamic>> loginUser({
     required String email,
     required String password,
@@ -70,15 +183,14 @@ class FirebaseService {
       );
     }
 
-    // Base user data from Firebase Auth (always available, no network required after auth)
     Map<String, dynamic> userData = {
       'uid': user.uid,
       'name': user.displayName ?? email.split('@').first,
       'email': user.email ?? email,
-      'role': 'Healthcare Worker',
+      'role': 'Doctor',
+      'profileCompleted': true,
     };
 
-    // Try to enrich with Firestore profile — gracefully degrade if unavailable
     try {
       final docSnapshot = await _db
           .collection('users')
@@ -87,12 +199,10 @@ class FirebaseService {
           .timeout(const Duration(seconds: 8));
       if (docSnapshot.exists && docSnapshot.data() != null) {
         userData.addAll(docSnapshot.data()!);
+        userData['profileCompleted'] = true;
       }
-    } catch (_) {
-      // Firestore unavailable (offline or slow): proceed with Firebase Auth data only
-    }
+    } catch (_) {}
 
-    // Always get a fresh token — this uses Firebase's cached token, no extra network call
     final token = await user.getIdToken();
 
     return {
