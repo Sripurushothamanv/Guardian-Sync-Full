@@ -33,6 +33,15 @@ export default function RegisterScreen() {
     }
   }, [authMode, otpSent]);
 
+  // Helper to format phone number to E.164 format (+91...) automatically
+  const formatPhoneNumber = (phone) => {
+    let clean = phone.trim().replace(/[\s\-\(\)]/g, '');
+    if (!clean.startsWith('+')) {
+      clean = '+91' + clean; // Default country code prefix for 10-digit Indian numbers
+    }
+    return clean;
+  };
+
   const handleEmailRegister = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password) {
@@ -66,22 +75,27 @@ export default function RegisterScreen() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !phoneNumber || phoneNumber.length < 8) {
-      return setError('Please enter your Name and a valid Phone Number with country code (e.g. +919876543210)');
+    if (!name.trim()) {
+      return setError('Please enter your Full Name before requesting OTP');
+    }
+
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    if (!formattedPhone || formattedPhone.length < 12) {
+      return setError('Please enter a valid 10-digit mobile number (e.g. 9876543210 or +919876543210)');
     }
 
     setLoading(true);
     setError('');
 
     const recaptchaVerifier = setupRecaptcha('recaptcha-register-container');
-    const res = await sendPhoneOtp(phoneNumber.trim(), recaptchaVerifier);
+    const res = await sendPhoneOtp(formattedPhone, recaptchaVerifier);
     setLoading(false);
 
     if (res.success) {
       setConfirmationResult(res.confirmationResult);
       setOtpSent(true);
     } else {
-      setError(res.error || 'Failed to send OTP code');
+      setError(res.error || 'Failed to send OTP code. Please check your phone number and try again.');
     }
   };
 
@@ -105,7 +119,7 @@ export default function RegisterScreen() {
     if (res.success) {
       navigate('/');
     } else {
-      setError(res.error || 'Invalid verification code');
+      setError(res.error || 'Invalid verification code. Please check and try again.');
     }
   };
 
@@ -295,13 +309,16 @@ export default function RegisterScreen() {
                   <Phone size={16} className="input-icon" />
                   <input 
                     type="tel" 
-                    placeholder="Mobile Number (e.g. +919876543210)" 
+                    placeholder="Mobile Number (e.g. 6382283784 or +916382283784)" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="input-field" 
                     required 
                   />
                 </div>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>
+                  Auto-formats 10-digit mobile numbers with +91 country code
+                </span>
               </div>
 
               <div className="form-group-auth">
@@ -376,7 +393,7 @@ export default function RegisterScreen() {
                   />
                 </div>
                 <span style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem', display: 'block' }}>
-                  OTP sent to {phoneNumber}
+                  OTP sent to {formatPhoneNumber(phoneNumber)}
                 </span>
               </div>
 

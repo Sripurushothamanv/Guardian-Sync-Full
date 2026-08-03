@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../AppContext';
-import { Lock, Mail, Phone, Activity, AlertCircle, KeyRound, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Phone, Activity, AlertCircle, KeyRound } from 'lucide-react';
 
 export default function LoginScreen() {
   const { login, setupRecaptcha, sendPhoneOtp, confirmPhoneOtp } = useContext(AppContext);
@@ -29,6 +29,14 @@ export default function LoginScreen() {
     }
   }, [authMode, otpSent]);
 
+  const formatPhoneNumber = (phone) => {
+    let clean = phone.trim().replace(/[\s\-\(\)]/g, '');
+    if (!clean.startsWith('+')) {
+      clean = '+91' + clean;
+    }
+    return clean;
+  };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) return setError('All fields are required');
@@ -48,15 +56,16 @@ export default function LoginScreen() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 8) {
-      return setError('Please enter a valid phone number with country code (e.g. +919876543210 or +12025550123)');
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    if (!formattedPhone || formattedPhone.length < 12) {
+      return setError('Please enter a valid 10-digit mobile number (e.g. 6382283784 or +916382283784)');
     }
 
     setLoading(true);
     setError('');
 
     const recaptchaVerifier = setupRecaptcha('recaptcha-container');
-    const res = await sendPhoneOtp(phoneNumber.trim(), recaptchaVerifier);
+    const res = await sendPhoneOtp(formattedPhone, recaptchaVerifier);
     setLoading(false);
 
     if (res.success) {
@@ -191,12 +200,12 @@ export default function LoginScreen() {
           !otpSent ? (
             <form onSubmit={handleSendOtp} className="auth-form">
               <div className="form-group-auth">
-                <label>Phone Number (with Country Code)</label>
+                <label>Phone Number (e.g. 6382283784 or +916382283784)</label>
                 <div className="input-with-icon">
                   <Phone size={16} className="input-icon" />
                   <input 
                     type="tel" 
-                    placeholder="+919876543210 or +12025550123" 
+                    placeholder="6382283784" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="input-field" 
@@ -204,7 +213,7 @@ export default function LoginScreen() {
                   />
                 </div>
                 <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>
-                  Include country code prefix e.g. +91 or +1
+                  Auto-formats 10-digit mobile numbers with +91 country code
                 </span>
               </div>
 
@@ -229,7 +238,7 @@ export default function LoginScreen() {
                   />
                 </div>
                 <span style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem', display: 'block' }}>
-                  OTP sent to {phoneNumber}
+                  OTP sent to {formatPhoneNumber(phoneNumber)}
                 </span>
               </div>
 
