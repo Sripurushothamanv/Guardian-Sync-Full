@@ -6,16 +6,13 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
   doc, 
   setDoc, 
   getDoc,
   collection,
   addDoc,
   onSnapshot,
-  query,
-  orderBy
+  query
 } from './firebase';
 
 export const AppContext = createContext();
@@ -26,16 +23,13 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const mapFirebaseError = (code) => {
   const map = {
     'auth/wrong-password': 'Incorrect password. Please try again.',
-    'auth/user-not-found': 'No account found with this email/phone.',
+    'auth/user-not-found': 'No account found with this email address.',
     'auth/email-already-in-use': 'An account with this email already exists.',
     'auth/weak-password': 'Password must be at least 6 characters.',
     'auth/invalid-email': 'Please enter a valid email address.',
     'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
     'auth/network-request-failed': 'Network error. Please check your connection.',
     'auth/invalid-credential': 'Invalid credentials. Please try again.',
-    'auth/invalid-phone-number': 'Invalid phone number format. Please include country code (e.g. +91... or +1...).',
-    'auth/invalid-verification-code': 'Invalid OTP code. Please check and try again.',
-    'auth/code-expired': 'OTP code has expired. Please request a new OTP.',
   };
   return map[code] || 'Authentication failed. Please try again.';
 };
@@ -99,7 +93,7 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
   }, [logs]);
 
-  // Robust profileComplete check: true if user is logged in
+  // Profile complete check
   const profileComplete = !!(
     user && (
       user.profileCompleted === true ||
@@ -130,7 +124,6 @@ export const AppProvider = ({ children }) => {
                   uid: firebaseUser.uid,
                   name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Healthcare Worker',
                   email: firebaseUser.email || '',
-                  phoneNumber: firebaseUser.phoneNumber || '',
                   role: 'Doctor',
                   hospital: '',
                   department: '',
@@ -208,9 +201,7 @@ export const AppProvider = ({ children }) => {
     'Authorization': `Bearer ${token}`
   });
 
-  // ==========================================
-  // AUTHENTICATION APIs — SINGLE UNIFIED PROFILE REGISTRATION
-  // ==========================================
+  // AUTHENTICATION APIs — EMAIL & PASSWORD UNIFIED PROFILE REGISTRATION
 
   const register = async (name, email, password, role = 'Doctor', hospital = '', department = '') => {
     try {
@@ -222,7 +213,6 @@ export const AppProvider = ({ children }) => {
         uid: firebaseUser.uid,
         name: name || firebaseUser.displayName || 'Healthcare Worker',
         email: firebaseUser.email || email,
-        phoneNumber: '',
         role: role || 'Doctor',
         hospital: hospital || '',
         department: department || '',
@@ -232,7 +222,6 @@ export const AppProvider = ({ children }) => {
         waterGoal: 3000
       };
 
-      // Write user profile document to Firestore users/{uid}
       try {
         await setDoc(doc(db, 'users', firebaseUser.uid), fullUserData, { merge: true });
       } catch (err) {
@@ -258,7 +247,6 @@ export const AppProvider = ({ children }) => {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || email.split('@')[0] || 'Healthcare Worker',
         email: firebaseUser.email || email,
-        phoneNumber: firebaseUser.phoneNumber || '',
         role: 'Doctor',
         hospital: '',
         department: '',
@@ -277,69 +265,6 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('guardian_token', freshToken);
       localStorage.setItem('guardian_user', JSON.stringify(userData));
       return { success: true };
-    } catch (err) {
-      return { success: false, error: mapFirebaseError(err.code) };
-    }
-  };
-
-  // Phone Auth Methods
-  const setupRecaptcha = (containerId) => {
-    try {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-        'size': 'invisible',
-        'callback': () => {},
-        'expired-callback': () => {}
-      });
-      return window.recaptchaVerifier;
-    } catch (err) {
-      console.warn('Recaptcha setup error:', err);
-      return null;
-    }
-  };
-
-  const sendPhoneOtp = async (phoneNumber, recaptchaVerifier) => {
-    try {
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-      return { success: true, confirmationResult };
-    } catch (err) {
-      return { success: false, error: mapFirebaseError(err.code) };
-    }
-  };
-
-  const confirmPhoneOtp = async (confirmationResult, otpCode, profileData = {}) => {
-    try {
-      const userCred = await confirmationResult.confirm(otpCode);
-      const firebaseUser = userCred.user;
-      const freshToken = await firebaseUser.getIdToken();
-
-      let userData = {
-        uid: firebaseUser.uid,
-        name: profileData.name || firebaseUser.displayName || 'Healthcare Worker',
-        email: firebaseUser.email || '',
-        phoneNumber: firebaseUser.phoneNumber || '',
-        role: profileData.role || 'Doctor',
-        hospital: profileData.hospital || '',
-        department: profileData.department || '',
-        profileCompleted: true
-      };
-
-      try {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          userData = { ...userData, profileCompleted: true, ...userDoc.data() };
-        } else {
-          await setDoc(doc(db, 'users', firebaseUser.uid), userData, { merge: true });
-        }
-      } catch (_) {}
-
-      setToken(freshToken);
-      setUser(userData);
-      localStorage.setItem('guardian_token', freshToken);
-      localStorage.setItem('guardian_user', JSON.stringify(userData));
-      return { success: true, user: userData };
     } catch (err) {
       return { success: false, error: mapFirebaseError(err.code) };
     }
@@ -400,9 +325,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('guardian_user', JSON.stringify(updated));
   };
 
-  // ==========================================
   // HYDRATION LOGGER
-  // ==========================================
 
   const logHydration = async (ml) => {
     const amount = parseInt(ml, 10);
@@ -483,7 +406,6 @@ export const AppProvider = ({ children }) => {
       else if (type === 'Rotating') shiftImpact = 20;
       else shiftImpact = 10;
 
-      // Extra fatigue for no-break shifts
       if (recentShift.noBreak) shiftImpact += 5;
 
       const isCurrent = now >= new Date(recentShift.startTime) && now <= new Date(recentShift.endTime);
@@ -578,13 +500,11 @@ export const AppProvider = ({ children }) => {
       newLog.recoveryScore = Math.min(100, Math.max(0, base));
     }
 
-    // 1. Update local state immediately
     setLogs(prev => ({
       ...prev,
       [type]: [newLog, ...(prev[type] || [])]
     }));
 
-    // 2. Write strictly to unified subcollections under users/{uid}/{type}_logs
     if (user && user.uid) {
       try {
         const subcollectionMap = {
@@ -913,9 +833,6 @@ export const AppProvider = ({ children }) => {
       logs,
       login,
       register,
-      setupRecaptcha,
-      sendPhoneOtp,
-      confirmPhoneOtp,
       completeProfile,
       logout,
       updateProfile,
