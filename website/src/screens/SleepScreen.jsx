@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIVoiceBar from '../components/AIVoiceBar';
 import { Moon, Clock, Star, Calendar, Sun } from 'lucide-react';
 
 export default function SleepScreen() {
@@ -77,6 +78,9 @@ export default function SleepScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Top Persistent AI Voice & Text Bar */}
+      <AIVoiceBar placeholder="Speak or type e.g. 'Slept 7.5 hours last night', 'Restless sleep for 5 hours'..." />
+
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
         {/* Sleep Logging Form */}
         <div className="glass-panel" style={{ padding: '2rem' }}>

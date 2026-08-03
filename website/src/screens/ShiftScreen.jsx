@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIVoiceBar from '../components/AIVoiceBar';
 import { Clock, CheckCircle, FileText, AlertTriangle } from 'lucide-react';
 
 export default function ShiftScreen() {
@@ -34,6 +35,9 @@ export default function ShiftScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Top Persistent AI Voice & Text Bar */}
+      <AIVoiceBar placeholder="Speak or type e.g. 'Working a 12 hour night shift', 'On-call shift for 8 hours'..." />
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>

@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../AppContext';
+import AIVoiceBar from '../components/AIVoiceBar';
 import { Utensils, Droplets, Sparkles } from 'lucide-react';
 
 export default function NutritionScreen() {
@@ -23,10 +24,10 @@ export default function NutritionScreen() {
     { keywords: ['masala dosa'], c: 280, p: 6, car: 42, f: 9 },
     { keywords: ['chapati', 'roti', 'phulka'], c: 100, p: 3, car: 18, f: 3 },
     { keywords: ['curd rice'], c: 220, p: 6, car: 32, f: 7 },
-    { keywords: ['chicken', 'grilled chicken'], c: 260, p: 32, car: 0, f: 12 },
+    { keywords: ['chicken', 'chicken breast', 'grilled chicken'], c: 260, p: 32, car: 0, f: 12 },
     { keywords: ['sandwich'], c: 320, p: 14, car: 36, f: 12 },
     { keywords: ['salad'], c: 120, p: 3, car: 12, f: 6 },
-    { keywords: ['rice', 'steamed rice'], c: 200, p: 4, car: 44, f: 1 },
+    { keywords: ['rice', 'steamed rice', 'chicken rice'], c: 200, p: 4, car: 44, f: 1 },
     { keywords: ['biryani', 'chicken biryani'], c: 450, p: 24, car: 55, f: 16 },
     { keywords: ['paneer', 'paneer butter'], c: 380, p: 18, car: 14, f: 28 },
     { keywords: ['dal', 'dal tadka'], c: 180, p: 9, car: 26, f: 5 },
@@ -113,6 +114,9 @@ export default function NutritionScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Top Persistent AI Voice & Text Bar */}
+      <AIVoiceBar placeholder="Speak or type e.g. 'Ate 2 plates of idli and sambar', 'Drank 500ml water'..." />
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -151,7 +155,7 @@ export default function NutritionScreen() {
               </div>
               <input 
                 type="text" 
-                placeholder="e.g. '2 Eggs and Toast' or 'Idli Sambar'" 
+                placeholder="e.g. '2 Eggs', 'Idli Sambar', 'Chicken Breast', 'Rice'" 
                 value={foodItem} 
                 onChange={e => setFoodItem(e.target.value)} 
                 className="input-field" 

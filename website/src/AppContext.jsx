@@ -6,6 +6,8 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
   doc, 
   setDoc, 
   getDoc 
@@ -19,13 +21,16 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const mapFirebaseError = (code) => {
   const map = {
     'auth/wrong-password': 'Incorrect password. Please try again.',
-    'auth/user-not-found': 'No account found with this email address.',
+    'auth/user-not-found': 'No account found with this email/phone.',
     'auth/email-already-in-use': 'An account with this email already exists.',
     'auth/weak-password': 'Password must be at least 6 characters.',
     'auth/invalid-email': 'Please enter a valid email address.',
     'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
     'auth/network-request-failed': 'Network error. Please check your connection.',
-    'auth/invalid-credential': 'Invalid email or password. Please try again.',
+    'auth/invalid-credential': 'Invalid credentials. Please try again.',
+    'auth/invalid-phone-number': 'Invalid phone number format. Please include country code (e.g. +1... or +91...).',
+    'auth/invalid-verification-code': 'Invalid OTP code. Please check and try again.',
+    'auth/code-expired': 'OTP code has expired. Please request a new OTP.',
   };
   return map[code] || 'Authentication failed. Please try again.';
 };
@@ -89,13 +94,17 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
   }, [logs]);
 
-  // Derive profileComplete from user data
+  // Robust profileComplete check: true if profileCompleted flag is set OR if name, role, hospital, department exist
   const profileComplete = !!(
-    user &&
-    user.name && user.name.trim() !== '' &&
-    user.role && user.role.trim() !== '' &&
-    user.hospital && user.hospital.trim() !== '' &&
-    user.department && user.department.trim() !== ''
+    user && (
+      user.profileCompleted === true ||
+      (
+        user.name && user.name.trim() !== '' &&
+        user.role && user.role.trim() !== '' &&
+        user.hospital && user.hospital.trim() !== '' &&
+        user.department && user.department.trim() !== ''
+      )
+    )
   );
 
   // Subscribe to Firebase Authentication state change
@@ -107,22 +116,31 @@ export const AppProvider = ({ children }) => {
           setToken(freshToken);
           localStorage.setItem('guardian_token', freshToken);
 
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = { uid: firebaseUser.uid, ...userDoc.data() };
-            setUser(userData);
-            localStorage.setItem('guardian_user', JSON.stringify(userData));
-          } else {
-            const baseUser = {
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || '',
-              email: firebaseUser.email,
-              role: '',
-              hospital: '',
-              department: ''
-            };
-            setUser(prev => prev || baseUser);
-            localStorage.setItem('guardian_user', JSON.stringify(baseUser));
+          try {
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            if (userDoc.exists()) {
+              const userData = { uid: firebaseUser.uid, ...userDoc.data() };
+              setUser(userData);
+              localStorage.setItem('guardian_user', JSON.stringify(userData));
+            } else {
+              setUser(prev => {
+                if (prev && prev.uid === firebaseUser.uid) return prev;
+                const baseUser = {
+                  uid: firebaseUser.uid,
+                  name: firebaseUser.displayName || '',
+                  email: firebaseUser.email || '',
+                  phoneNumber: firebaseUser.phoneNumber || '',
+                  role: '',
+                  hospital: '',
+                  department: '',
+                  profileCompleted: false
+                };
+                localStorage.setItem('guardian_user', JSON.stringify(baseUser));
+                return baseUser;
+              });
+            }
+          } catch (err) {
+            console.warn('Firestore read error, using cached local user:', err);
           }
         } catch (_) {}
       }
@@ -138,7 +156,7 @@ export const AppProvider = ({ children }) => {
   });
 
   // ==========================================
-  // AUTHENTICATION APIs — STRICT FIREBASE ONLY
+  // AUTHENTICATION APIs — EMAIL & PHONE AUTH
   // ==========================================
 
   const register = async (email, password) => {
@@ -151,9 +169,11 @@ export const AppProvider = ({ children }) => {
         uid: firebaseUser.uid,
         name: '',
         email: firebaseUser.email,
+        phoneNumber: '',
         role: '',
         hospital: '',
         department: '',
+        profileCompleted: false,
         sleepGoal: 8,
         caffeineLimit: 400,
         waterGoal: 3000
@@ -169,29 +189,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const completeProfile = async (profileData) => {
-    if (!user || !user.uid) return { success: false, error: 'Not authenticated' };
-    
-    const updatedUser = {
-      ...user,
-      name: profileData.name,
-      role: profileData.role,
-      hospital: profileData.hospital,
-      department: profileData.department,
-      sleepGoal: 8,
-      caffeineLimit: 400,
-      waterGoal: 3000
-    };
-
-    try {
-      await setDoc(doc(db, 'users', user.uid), updatedUser);
-    } catch (_) {}
-
-    setUser(updatedUser);
-    localStorage.setItem('guardian_user', JSON.stringify(updatedUser));
-    return { success: true };
-  };
-
   const login = async (email, password) => {
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
@@ -201,9 +198,11 @@ export const AppProvider = ({ children }) => {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || '',
         email: firebaseUser.email || email,
+        phoneNumber: firebaseUser.phoneNumber || '',
         role: '',
         hospital: '',
-        department: ''
+        department: '',
+        profileCompleted: false
       };
 
       try {
@@ -221,6 +220,93 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       return { success: false, error: mapFirebaseError(err.code) };
     }
+  };
+
+  // Phone Auth Methods
+  const setupRecaptcha = (containerId) => {
+    try {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+        'size': 'invisible',
+        'callback': () => {},
+        'expired-callback': () => {}
+      });
+      return window.recaptchaVerifier;
+    } catch (err) {
+      console.warn('Recaptcha setup error:', err);
+      return null;
+    }
+  };
+
+  const sendPhoneOtp = async (phoneNumber, recaptchaVerifier) => {
+    try {
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+      return { success: true, confirmationResult };
+    } catch (err) {
+      return { success: false, error: mapFirebaseError(err.code) };
+    }
+  };
+
+  const confirmPhoneOtp = async (confirmationResult, otpCode) => {
+    try {
+      const userCred = await confirmationResult.confirm(otpCode);
+      const firebaseUser = userCred.user;
+      const freshToken = await firebaseUser.getIdToken();
+
+      let userData = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || '',
+        email: firebaseUser.email || '',
+        phoneNumber: firebaseUser.phoneNumber || '',
+        role: '',
+        hospital: '',
+        department: '',
+        profileCompleted: false
+      };
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          userData = { ...userData, ...userDoc.data() };
+        }
+      } catch (_) {}
+
+      setToken(freshToken);
+      setUser(userData);
+      localStorage.setItem('guardian_token', freshToken);
+      localStorage.setItem('guardian_user', JSON.stringify(userData));
+      return { success: true, user: userData };
+    } catch (err) {
+      return { success: false, error: mapFirebaseError(err.code) };
+    }
+  };
+
+  const completeProfile = async (profileData) => {
+    if (!user || !user.uid) return { success: false, error: 'Not authenticated' };
+    
+    const updatedUser = {
+      ...user,
+      name: profileData.name,
+      role: profileData.role,
+      hospital: profileData.hospital,
+      department: profileData.department,
+      profileCompleted: true,
+      sleepGoal: 8,
+      caffeineLimit: 400,
+      waterGoal: 3000
+    };
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), updatedUser, { merge: true });
+    } catch (err) {
+      console.warn('Firestore write warning:', err);
+    }
+
+    setUser(updatedUser);
+    localStorage.setItem('guardian_user', JSON.stringify(updatedUser));
+    return { success: true };
   };
 
   const logout = async () => {
@@ -247,7 +333,7 @@ export const AppProvider = ({ children }) => {
         return;
       }
     } catch (_) {}
-    const updated = { ...user, ...profileData };
+    const updated = { ...user, ...profileData, profileCompleted: true };
     setUser(updated);
     localStorage.setItem('guardian_user', JSON.stringify(updated));
   };
@@ -743,6 +829,9 @@ export const AppProvider = ({ children }) => {
       logs,
       login,
       register,
+      setupRecaptcha,
+      sendPhoneOtp,
+      confirmPhoneOtp,
       completeProfile,
       logout,
       updateProfile,

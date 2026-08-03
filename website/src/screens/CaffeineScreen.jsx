@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIVoiceBar from '../components/AIVoiceBar';
 import { Coffee, Info, Plus, Minus, Clock, Calendar } from 'lucide-react';
 
 export default function CaffeineScreen() {
@@ -45,6 +46,9 @@ export default function CaffeineScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Top Persistent AI Voice & Text Bar */}
+      <AIVoiceBar placeholder="Speak or type e.g. 'Drank 2 cups of espresso', 'Had a red bull energy drink'..." />
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
