@@ -10,7 +10,12 @@ import {
   signInWithPhoneNumber,
   doc, 
   setDoc, 
-  getDoc 
+  getDoc,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy
 } from './firebase';
 
 export const AppContext = createContext();
@@ -28,7 +33,7 @@ const mapFirebaseError = (code) => {
     'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
     'auth/network-request-failed': 'Network error. Please check your connection.',
     'auth/invalid-credential': 'Invalid credentials. Please try again.',
-    'auth/invalid-phone-number': 'Invalid phone number format. Please include country code (e.g. +1... or +91...).',
+    'auth/invalid-phone-number': 'Invalid phone number format. Please include country code (e.g. +91... or +1...).',
     'auth/invalid-verification-code': 'Invalid OTP code. Please check and try again.',
     'auth/code-expired': 'OTP code has expired. Please request a new OTP.',
   };
@@ -94,7 +99,7 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
   }, [logs]);
 
-  // Robust profileComplete check: true if profileCompleted flag is set OR if name, role, hospital, department exist
+  // Robust profileComplete check: true if profileCompleted flag is set OR if user fields exist
   const profileComplete = !!(
     user && (
       user.profileCompleted === true ||
@@ -148,6 +153,61 @@ export const AppProvider = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  // ==========================================
+  // REAL-TIME 2-WAY FIRESTORE LISTENERS
+  // ==========================================
+  useEffect(() => {
+    if (!user || !user.uid) return;
+
+    const uid = user.uid;
+    const unsubscribes = [];
+
+    const setupSubcollectionListener = (subName, logTypeKey) => {
+      try {
+        const q = query(collection(db, 'users', uid, subName));
+        const unsub = onSnapshot(q, (snapshot) => {
+          const fetchedLogs = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            fetchedLogs.push({
+              _id: docSnap.id,
+              ...data,
+              // Normalize timestamps
+              timestamp: data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate().toISOString() : data.timestamp) : (data.createdAt || new Date().toISOString())
+            });
+          });
+
+          if (fetchedLogs.length > 0) {
+            setLogs(prev => ({
+              ...prev,
+              [logTypeKey]: fetchedLogs
+            }));
+          }
+        }, (err) => {
+          console.warn(`Realtime snapshot listener error on ${subName}:`, err);
+        });
+
+        unsubscribes.push(unsub);
+      } catch (err) {
+        console.warn(`Failed to attach listener to ${subName}:`, err);
+      }
+    };
+
+    setupSubcollectionListener('sleep_logs', 'sleep');
+    setupSubcollectionListener('caffeine_logs', 'caffeine');
+    setupSubcollectionListener('shift_logs', 'shift');
+    setupSubcollectionListener('nutrition_logs', 'nutrition');
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub && unsub());
+    };
+  }, [user?.uid]);
+
+  // Recalculate dashboard metrics whenever logs update
+  useEffect(() => {
+    runFallbackCalculations();
+  }, [logs]);
 
   // Authorization Headers
   const getHeaders = () => ({
@@ -494,7 +554,8 @@ export const AppProvider = ({ children }) => {
   const addLog = async (type, logData) => {
     const newLog = {
       _id: 'mock_log_' + Date.now() + Math.random(),
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       ...logData
     };
     
@@ -515,11 +576,32 @@ export const AppProvider = ({ children }) => {
       newLog.recoveryScore = Math.min(100, Math.max(0, base));
     }
 
+    // 1. Update local state immediately
     setLogs(prev => ({
       ...prev,
       [type]: [newLog, ...(prev[type] || [])]
     }));
-    runFallbackCalculations();
+
+    // 2. Write strictly to unified subcollections under users/{uid}/{type}_logs
+    if (user && user.uid) {
+      try {
+        const subcollectionMap = {
+          sleep: 'sleep_logs',
+          caffeine: 'caffeine_logs',
+          shift: 'shift_logs',
+          nutrition: 'nutrition_logs'
+        };
+
+        const targetSubcollection = subcollectionMap[type];
+        if (targetSubcollection) {
+          const docData = { ...newLog };
+          delete docData._id;
+          await addDoc(collection(db, 'users', user.uid, targetSubcollection), docData);
+        }
+      } catch (err) {
+        console.warn(`Firestore subcollection write error on ${type}:`, err);
+      }
+    }
   };
 
   const parseAILog = (text) => {
