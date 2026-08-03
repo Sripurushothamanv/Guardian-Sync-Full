@@ -1,0 +1,282 @@
+name: e2e.yml
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  selenium-website-tests:
+    name: "🌐 Selenium — Website Tests (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Selenium Website Tests (300 Cases)
+        env:
+          BASE_URL: https://sripurushothamanv.github.io/Guardian-Sync-Full/
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=selenium
+
+      - name: Upload Selenium Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-test-report
+          path: mobile/test_suite/selenium_test_report.xlsx
+          retention-days: 30
+
+  appium-android-tests:
+    name: "📱 Appium — Android Tests (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Appium Android Tests (300 Cases)
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=appium
+
+      - name: Upload Appium Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-test-report
+          path: mobile/test_suite/appium_test_report.xlsx
+          retention-days: 30
+
+  unit-api-tests:
+    name: "🧪 Unit Tests — API (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Unit API Tests (300 Cases)
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=unit
+
+      - name: Upload Unit Test Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: mobile/test_suite/unit_test_report.xlsx
+          retention-days: 30
+
+  validation-tests:
+    name: "✅ Validation Tests (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Validation Tests (300 Cases)
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=validation
+
+      - name: Upload Validation Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-test-report
+          path: mobile/test_suite/validation_test_report.xlsx
+          retention-days: 30
+
+  deployment-status-tests:
+    name: "🚀 Deployment Status (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Deployment Status Verification (300 Cases)
+        env:
+          BASE_URL: https://sripurushothamanv.github.io/Guardian-Sync-Full/
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=deployment
+
+      - name: Upload Deployment Status Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-test-report
+          path: mobile/test_suite/deployment_test_report.xlsx
+          retention-days: 30
+
+  load-performance-tests:
+    name: "📈 Load Testing — Performance (300)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+
+      - name: Run Load Testing Performance (300 Cases)
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=load
+
+      - name: Upload Load Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: mobile/test_suite/load_test_report.xlsx
+          retention-days: 30
+
+  compile-master-report:
+    name: "📊 Compile Master Report & Deploy"
+    needs:
+      - selenium-website-tests
+      - appium-android-tests
+      - unit-api-tests
+      - validation-tests
+      - deployment-status-tests
+      - load-performance-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: 'mobile/test_suite/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd mobile/test_suite
+          npm install
+          cd ../../website
+          npm install
+
+      - name: Build Application Website
+        run: |
+          cd website
+          npm run build
+
+      - name: Run Full Test Suite & Generate Master Artifacts
+        env:
+          BASE_URL: https://sripurushothamanv.github.io/Guardian-Sync-Full/
+        run: |
+          cd mobile/test_suite
+          node run_tests.js --suite=all
+
+      - name: Publish Test Summary to Job Dashboard
+        if: always()
+        run: |
+          cat mobile/test_suite/github_summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Master Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Automation_Test_Report.xlsx
+          path: mobile/test_suite/Automation_Test_Report.xlsx
+          retention-days: 30
+
+      - name: Upload HTML Dashboard Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-dashboard-html
+          path: mobile/test_suite/dashboard.html
+          retention-days: 30
+
+      - name: Deploy Website to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: website/dist
+          branch: gh-pages
+          clean: true
