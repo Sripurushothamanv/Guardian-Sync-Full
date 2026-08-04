@@ -86,6 +86,68 @@ class AppState extends ChangeNotifier {
     _loadSession();
   }
 
+  // Load saved session on app startup
+  Future<void> _loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('guardian_token');
+    final userStr = prefs.getString('guardian_user');
+    if (userStr != null) {
+      try {
+        _user = jsonDecode(userStr);
+      } catch (_) {}
+    }
+
+    final logsStr = prefs.getString('guardian_logs');
+    if (logsStr != null) {
+      try {
+        final decoded = jsonDecode(logsStr);
+        _logs = {
+          'sleep': decoded['sleep'] ?? [],
+          'caffeine': decoded['caffeine'] ?? [],
+          'shift': decoded['shift'] ?? [],
+          'nutrition': decoded['nutrition'] ?? [],
+        };
+      } catch (_) {}
+    }
+
+    final dashboardStr = prefs.getString('guardian_dashboard');
+    if (dashboardStr != null) {
+      try {
+        _dashboardData = jsonDecode(dashboardStr);
+      } catch (_) {}
+    }
+
+    final notifsStr = prefs.getString('guardian_notifications');
+    if (notifsStr != null) {
+      try {
+        _notifications = jsonDecode(notifsStr);
+      } catch (_) {}
+    }
+
+    // Silent background token refresh check if user is signed into Firebase Auth
+    if (FirebaseAuth.instance.currentUser != null) {
+      try {
+        final freshToken = await _apiService.getFreshToken(fallbackToken: _token);
+        if (freshToken != null && freshToken.isNotEmpty) {
+          _token = freshToken;
+          await prefs.setString('guardian_token', freshToken);
+        }
+      } catch (_) {}
+    }
+
+    _isInitialized = true;
+    notifyListeners();
+
+    if (isAuthenticated) {
+      _initFirestoreListeners();
+      fetchDashboard();
+      fetchWeekly();
+      fetchGoals();
+      fetchNotifications();
+      fetchStreaks();
+    }
+  }
+
   StreamSubscription? _sleepSub;
   StreamSubscription? _caffSub;
   StreamSubscription? _shiftSub;
