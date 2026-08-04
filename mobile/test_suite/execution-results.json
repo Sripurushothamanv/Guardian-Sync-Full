@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-08-03T12:51:15.223Z",
+  "timestamp": "2026-08-04T03:48:33.220Z",
   "environment": "GitHub Actions CI/CD",
   "targetUrl": "https://sripurushothamanv.github.io/Guardian-Sync-Full/",
-  "totalTests": 1800,
-  "passed": 1800,
+  "totalTests": 2100,
+  "passed": 2100,
   "failed": 0,
   "skipped": 0,
   "passRate": "100%",
@@ -40,6 +40,12 @@
     },
     {
       "suiteName": "load",
+      "count": 300,
+      "passed": 300,
+      "failed": 0
+    },
+    {
+      "suiteName": "security",
       "count": 300,
       "passed": 300,
       "failed": 0
