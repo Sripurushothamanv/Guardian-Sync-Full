@@ -60,3 +60,5 @@ export {
   orderBy,
   serverTimestamp
 };
+
+export default app;
