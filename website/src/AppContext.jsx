@@ -258,6 +258,7 @@ export const AppProvider = ({ children }) => {
         }
       } catch (_) {}
 
+      setLogs({ sleep: [], caffeine: [], shift: [], nutrition: [] });
       setToken(freshToken);
       setUser(userData);
       localStorage.setItem('guardian_token', freshToken);
@@ -300,8 +301,10 @@ export const AppProvider = ({ children }) => {
     } catch (_) {}
     setToken(null);
     setUser(null);
+    setLogs({ sleep: [], caffeine: [], shift: [], nutrition: [] });
     localStorage.removeItem('guardian_token');
     localStorage.removeItem('guardian_user');
+    localStorage.removeItem('guardian_logs');
   };
 
   const updateProfile = async (profileData) => {

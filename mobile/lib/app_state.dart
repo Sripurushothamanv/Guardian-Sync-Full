@@ -82,75 +82,37 @@ class AppState extends ChangeNotifier {
   Map<String, List<dynamic>> get logs => _logs;
 
   AppState() {
+    _setupAuthListener();
     _loadSession();
-  }
-
-  // Load saved session on app startup
-  Future<void> _loadSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('guardian_token');
-    final userStr = prefs.getString('guardian_user');
-    if (userStr != null) {
-      try {
-        _user = jsonDecode(userStr);
-      } catch (_) {}
-    }
-
-    final logsStr = prefs.getString('guardian_logs');
-    if (logsStr != null) {
-      try {
-        final decoded = jsonDecode(logsStr);
-        _logs = {
-          'sleep': decoded['sleep'] ?? [],
-          'caffeine': decoded['caffeine'] ?? [],
-          'shift': decoded['shift'] ?? [],
-          'nutrition': decoded['nutrition'] ?? [],
-        };
-      } catch (_) {}
-    }
-
-    final dashboardStr = prefs.getString('guardian_dashboard');
-    if (dashboardStr != null) {
-      try {
-        _dashboardData = jsonDecode(dashboardStr);
-      } catch (_) {}
-    }
-
-    final notifsStr = prefs.getString('guardian_notifications');
-    if (notifsStr != null) {
-      try {
-        _notifications = jsonDecode(notifsStr);
-      } catch (_) {}
-    }
-
-    // Silent background token refresh check if user is signed into Firebase Auth
-    if (FirebaseAuth.instance.currentUser != null) {
-      try {
-        final freshToken = await _apiService.getFreshToken(fallbackToken: _token);
-        if (freshToken != null && freshToken.isNotEmpty) {
-          _token = freshToken;
-          await prefs.setString('guardian_token', freshToken);
-        }
-      } catch (_) {}
-    }
-
-    _isInitialized = true;
-    notifyListeners();
-
-    if (isAuthenticated) {
-      _initFirestoreListeners();
-      fetchDashboard();
-      fetchWeekly();
-      fetchGoals();
-      fetchNotifications();
-      fetchStreaks();
-    }
   }
 
   StreamSubscription? _sleepSub;
   StreamSubscription? _caffSub;
   StreamSubscription? _shiftSub;
   StreamSubscription? _nutrSub;
+  StreamSubscription? _authSub;
+
+  void _setupAuthListener() {
+    _authSub?.cancel();
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((firebaseUser) {
+      if (firebaseUser != null) {
+        final currentUid = firebaseUser.uid;
+        if (_user == null) {
+          _user = {
+            'uid': currentUid,
+            'email': firebaseUser.email ?? '',
+            'name': firebaseUser.displayName ?? firebaseUser.email?.split('@').first ?? 'Healthcare Worker',
+            'role': 'Doctor',
+            'profileCompleted': true,
+          };
+        } else {
+          _user!['uid'] = currentUid;
+        }
+        _initFirestoreListeners();
+        notifyListeners();
+      }
+    });
+  }
 
   void _initFirestoreListeners() {
     _sleepSub?.cancel();
@@ -158,36 +120,62 @@ class AppState extends ChangeNotifier {
     _shiftSub?.cancel();
     _nutrSub?.cancel();
 
-    if (_user == null || _user!['uid'] == null) return;
-    final uid = _user!['uid'].toString();
+    final activeUser = FirebaseAuth.instance.currentUser;
+    final String? uid = activeUser?.uid ?? _user?['uid']?.toString();
 
-    _sleepSub = _firebaseService.getLogStream(uid: uid, subcollection: 'sleep_logs').listen((snap) {
-      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      _logs['sleep'] = items;
-      runOfflineCalculations();
-      notifyListeners();
-    });
+    if (uid == null || uid.isEmpty) return;
 
-    _caffSub = _firebaseService.getLogStream(uid: uid, subcollection: 'caffeine_logs').listen((snap) {
-      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      _logs['caffeine'] = items;
-      runOfflineCalculations();
-      notifyListeners();
-    });
+    if (_user != null && _user!['uid'] != uid) {
+      _user!['uid'] = uid;
+    }
 
-    _shiftSub = _firebaseService.getLogStream(uid: uid, subcollection: 'shift_logs').listen((snap) {
-      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      _logs['shift'] = items;
-      runOfflineCalculations();
-      notifyListeners();
-    });
+    _sleepSub = _firebaseService.getLogStream(uid: uid, subcollection: 'sleep_logs').listen(
+      (snap) {
+        final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+        _logs['sleep'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      },
+      onError: (err) {
+        if (kDebugMode) print('Realtime sleep_logs listener error: $err');
+      },
+    );
 
-    _nutrSub = _firebaseService.getLogStream(uid: uid, subcollection: 'nutrition_logs').listen((snap) {
-      final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      _logs['nutrition'] = items;
-      runOfflineCalculations();
-      notifyListeners();
-    });
+    _caffSub = _firebaseService.getLogStream(uid: uid, subcollection: 'caffeine_logs').listen(
+      (snap) {
+        final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+        _logs['caffeine'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      },
+      onError: (err) {
+        if (kDebugMode) print('Realtime caffeine_logs listener error: $err');
+      },
+    );
+
+    _shiftSub = _firebaseService.getLogStream(uid: uid, subcollection: 'shift_logs').listen(
+      (snap) {
+        final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+        _logs['shift'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      },
+      onError: (err) {
+        if (kDebugMode) print('Realtime shift_logs listener error: $err');
+      },
+    );
+
+    _nutrSub = _firebaseService.getLogStream(uid: uid, subcollection: 'nutrition_logs').listen(
+      (snap) {
+        final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
+        _logs['nutrition'] = items;
+        runOfflineCalculations();
+        notifyListeners();
+      },
+      onError: (err) {
+        if (kDebugMode) print('Realtime nutrition_logs listener error: $err');
+      },
+    );
   }
 
   // Save session
@@ -372,6 +360,12 @@ class AppState extends ChangeNotifier {
             ? result['user'] as Map<String, dynamic>
             : null;
         _isOffline = false;
+        _logs = {
+          'sleep': [],
+          'caffeine': [],
+          'shift': [],
+          'nutrition': [],
+        };
         await _saveSession();
         _initFirestoreListeners();
         notifyListeners();
@@ -416,9 +410,22 @@ class AppState extends ChangeNotifier {
     _token = null;
     _user = null;
     _lastAuthError = null;
+    _sleepSub?.cancel();
+    _caffSub?.cancel();
+    _shiftSub?.cancel();
+    _nutrSub?.cancel();
+    _logs = {
+      'sleep': [],
+      'caffeine': [],
+      'shift': [],
+      'nutrition': [],
+    };
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('guardian_token');
     await prefs.remove('guardian_user');
+    await prefs.remove('guardian_logs');
+    await prefs.remove('guardian_dashboard');
+    await prefs.remove('guardian_notifications');
     try {
       await _firebaseService.signOut();
     } catch (_) {}
