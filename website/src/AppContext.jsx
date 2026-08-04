@@ -146,6 +146,7 @@ export const AppProvider = ({ children }) => {
   // Real-time 2-way Firestore Listeners
   useEffect(() => {
     if (!user || !user.uid) return;
+    console.log("Current Web Auth UID:", user?.uid);
 
     const uid = user.uid;
     const unsubscribes = [];

@@ -183,6 +183,7 @@ class AppState extends ChangeNotifier {
     _nutrSub?.cancel();
 
     final activeUser = FirebaseAuth.instance.currentUser;
+    print("Current Mobile Auth UID: ${FirebaseAuth.instance.currentUser?.uid}");
     final String? uid = activeUser?.uid ?? _user?['uid']?.toString();
 
     if (uid == null || uid.isEmpty) return;
