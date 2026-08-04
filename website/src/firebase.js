@@ -26,12 +26,13 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBCPAzRCZNkMVUCcreYZpwkbJ4hWXkNyZk",
+  apiKey: "AIzaSyB3p_yHuTDFi6Xufm5ZX40Er3xXUvLW9Pc",
   authDomain: "guardian-sync-4694f.firebaseapp.com",
   projectId: "guardian-sync-4694f",
   storageBucket: "guardian-sync-4694f.firebasestorage.app",
   messagingSenderId: "461920928696",
-  appId: "1:461920928696:android:0cc0f3039d205fedc6c54d"
+  appId: "1:461920928696:web:2ffdd5559a017b82c6c54d",
+  measurementId: "G-22XBMFQPT8"
 };
 
 const app = initializeApp(firebaseConfig);
