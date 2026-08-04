@@ -164,12 +164,10 @@ export const AppProvider = ({ children }) => {
             });
           });
 
-          if (fetchedLogs.length > 0) {
-            setLogs(prev => ({
-              ...prev,
-              [logTypeKey]: fetchedLogs
-            }));
-          }
+          setLogs(prev => ({
+            ...prev,
+            [logTypeKey]: fetchedLogs
+          }));
         }, (err) => {
           console.warn(`Realtime snapshot listener error on ${subName}:`, err);
         });

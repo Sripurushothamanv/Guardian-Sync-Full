@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/api_service.dart';
 import 'services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -162,38 +163,30 @@ class AppState extends ChangeNotifier {
 
     _sleepSub = _firebaseService.getLogStream(uid: uid, subcollection: 'sleep_logs').listen((snap) {
       final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      if (items.isNotEmpty) {
-        _logs['sleep'] = items;
-        runOfflineCalculations();
-        notifyListeners();
-      }
+      _logs['sleep'] = items;
+      runOfflineCalculations();
+      notifyListeners();
     });
 
     _caffSub = _firebaseService.getLogStream(uid: uid, subcollection: 'caffeine_logs').listen((snap) {
       final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      if (items.isNotEmpty) {
-        _logs['caffeine'] = items;
-        runOfflineCalculations();
-        notifyListeners();
-      }
+      _logs['caffeine'] = items;
+      runOfflineCalculations();
+      notifyListeners();
     });
 
     _shiftSub = _firebaseService.getLogStream(uid: uid, subcollection: 'shift_logs').listen((snap) {
       final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      if (items.isNotEmpty) {
-        _logs['shift'] = items;
-        runOfflineCalculations();
-        notifyListeners();
-      }
+      _logs['shift'] = items;
+      runOfflineCalculations();
+      notifyListeners();
     });
 
     _nutrSub = _firebaseService.getLogStream(uid: uid, subcollection: 'nutrition_logs').listen((snap) {
       final items = snap.docs.map((doc) => {'_id': doc.id, ...doc.data()}).toList();
-      if (items.isNotEmpty) {
-        _logs['nutrition'] = items;
-        runOfflineCalculations();
-        notifyListeners();
-      }
+      _logs['nutrition'] = items;
+      runOfflineCalculations();
+      notifyListeners();
     });
   }
 
@@ -1035,6 +1028,14 @@ class AppState extends ChangeNotifier {
   // OFFLINE COMPUTATION FALLBACK
   // ==========================================
 
+  DateTime? _parseDateTime(dynamic rawTime) {
+    if (rawTime == null) return null;
+    if (rawTime is Timestamp) return rawTime.toDate();
+    if (rawTime is DateTime) return rawTime;
+    if (rawTime is String) return DateTime.tryParse(rawTime);
+    return DateTime.tryParse(rawTime.toString());
+  }
+
   void runOfflineCalculations() {
     final sleepGoal = _user != null ? (_user!['sleepGoal'] ?? 8) : 8;
     final now = DateTime.now();
@@ -1042,9 +1043,8 @@ class AppState extends ChangeNotifier {
     // 1. Decay Caffeine (5-Hour Half-Life Exponential Decay: active = initial * pow(0.5, t / 5.0))
     double activeCaff = 0;
     for (var log in _logs['caffeine']!) {
-      final String? timeStr = log['timestamp'] ?? log['createdAt'];
-      if (timeStr == null) continue;
-      final loggedTime = DateTime.tryParse(timeStr);
+      final rawTime = log['timestamp'] ?? log['createdAt'];
+      final loggedTime = _parseDateTime(rawTime);
       if (loggedTime == null) continue;
       final double t = now.difference(loggedTime).inMinutes / 60.0;
       if (t >= 0 && t <= 24) {
@@ -1060,7 +1060,8 @@ class AppState extends ChangeNotifier {
       for (int i = 0; i < 7; i++) {
         final day = now.subtract(Duration(days: i));
         final dayLogs = _logs['sleep']!.where((log) {
-          final end = DateTime.parse(log['endTime']);
+          final end = _parseDateTime(log['endTime'] ?? log['timestamp'] ?? log['createdAt']);
+          if (end == null) return false;
           return end.year == day.year &&
               end.month == day.month &&
               end.day == day.day;
@@ -1085,14 +1086,14 @@ class AppState extends ChangeNotifier {
 
     if (_logs['sleep']!.isNotEmpty) {
       final latest = _logs['sleep']![0];
-      final endTime = DateTime.parse(latest['endTime']);
+      final endTime = _parseDateTime(latest['endTime'] ?? latest['timestamp'] ?? latest['createdAt']);
       lastNightSleep = (latest['duration'] ?? 7.5).toDouble();
       lastSleepQuality = latest['quality'] ?? 'Good';
       recoveryScore = latest['recoveryScore'] ?? 85;
 
       if (latest['awakeHours'] != null) {
         awakeHours = (latest['awakeHours'] as num).toDouble();
-      } else {
+      } else if (endTime != null) {
         final diff = now.difference(endTime).inMinutes / 60.0;
         if (diff >= 0 && diff <= 48) {
           awakeHours = double.parse(diff.toStringAsFixed(1));
@@ -1108,8 +1109,8 @@ class AppState extends ChangeNotifier {
     final recentShift = _logs['shift']!.isEmpty
         ? null
         : _logs['shift']!.firstWhere((s) {
-            final start = DateTime.tryParse(s['startTime'] ?? '');
-            final end = DateTime.tryParse(s['endTime'] ?? '');
+            final start = _parseDateTime(s['startTime'] ?? s['timestamp'] ?? s['createdAt']);
+            final end = _parseDateTime(s['endTime'] ?? s['timestamp'] ?? s['createdAt']);
             if (start == null || end == null) return false;
             final isCurrent = now.isAfter(start) && now.isBefore(end);
             final isRecent = now.isAfter(end) && now.difference(end).inHours <= 24;
@@ -1128,11 +1129,11 @@ class AppState extends ChangeNotifier {
         shiftImpact = 10;
       }
 
-      final start = DateTime.tryParse(recentShift['startTime'] ?? '') ?? now;
+      final start = _parseDateTime(recentShift['startTime'] ?? recentShift['timestamp'] ?? recentShift['createdAt']) ?? now;
       activeShift = {
         'type': type,
         'impact': shiftImpact,
-        'startedAt': recentShift['startTime'],
+        'startedAt': recentShift['startTime'] ?? start.toIso8601String(),
         'label': '$type Shift (+$shiftImpact Fatigue Impact)',
         'duration': double.parse(
           (now.difference(start).inMinutes / 60.0).clamp(0.0, 24.0).toStringAsFixed(1),
@@ -1183,7 +1184,8 @@ class AppState extends ChangeNotifier {
     // 7. Water Intake Today
     final waterIntake = _logs['nutrition']!
         .where((n) {
-          final logDate = DateTime.parse(n['timestamp'] ?? n['createdAt']);
+          final logDate = _parseDateTime(n['timestamp'] ?? n['createdAt']);
+          if (logDate == null) return false;
           return logDate.year == now.year &&
               logDate.month == now.month &&
               logDate.day == now.day &&
