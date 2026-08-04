@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB3p_yHuTDFi6Xufm5ZX40Er3xXUvLW9Pc",
+  apiKey: "AIzaSyBCPAzRCZNkMVUCcreYZpwkbJ4hWXkNyZk",
   authDomain: "guardian-sync-4694f.firebaseapp.com",
   projectId: "guardian-sync-4694f",
   storageBucket: "guardian-sync-4694f.firebasestorage.app",
