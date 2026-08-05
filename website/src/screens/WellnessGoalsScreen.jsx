@@ -1,197 +1,165 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import { Target, Plus, CheckCircle, Trash2, Award, Edit2, Flame, Sparkles, X } from 'lucide-react';
+import { Flame, Plus, Moon, Coffee, Droplets, Award, Sprout } from 'lucide-react';
 
 export default function WellnessGoalsScreen() {
-  const { goals, addGoal, editGoal, deleteGoal, addLogToGoal, streakInfo } = useContext(AppContext);
+  const { goals, addGoal, addLogToGoal } = useContext(AppContext);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [title, setTitle] = useState('');
-  const [type, setType] = useState('sleep');
   const [target, setTarget] = useState('8');
-  
-  // Edit Modal State
-  const [editingGoal, setEditingGoal] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editTarget, setEditTarget] = useState('');
 
   const handleAddGoal = (e) => {
     e.preventDefault();
     if (!title) return;
-    addGoal(title, type, target);
+    addGoal(title, 'custom', target);
     setTitle('');
-  };
-
-  const handleOpenEdit = (g) => {
-    setEditingGoal(g);
-    setEditTitle(g.title);
-    setEditTarget(String(g.targetValue));
-  };
-
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
-    if (!editingGoal || !editTitle) return;
-    editGoal(editingGoal._id, editTitle, editTarget);
-    setEditingGoal(null);
+    setShowAddModal(false);
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
-      {/* Left Column: Goal CRUD & List */}
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <Target size={28} color="#14b8a6" className="neon-glow-emerald" />
-          <div>
-            <h2 style={{ fontSize: '1.4rem' }}>Wellness Goals</h2>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Custom targets, progress rings & streak tracking</p>
-          </div>
-        </div>
-
-        {/* Add Goal Form */}
-        <form onSubmit={handleAddGoal} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Goal Title</label>
-            <input type="text" placeholder="e.g. Daily Water Target 3000ml" value={title} onChange={e => setTitle(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Category</label>
-              <select value={type} onChange={e => setType(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(12, 15, 32, 0.9)' }}>
-                <option value="sleep">Sleep Target</option>
-                <option value="caffeine">Caffeine Limit</option>
-                <option value="water">Hydration Target</option>
-                <option value="nutrition">Nutrition Target</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.7)' }}>Target Value</label>
-              <input type="number" value={target} onChange={e => setTarget(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
-            </div>
-          </div>
-
-          <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: '#14b8a6' }}>
-            <Plus size={16} /> Create Goal Target
-          </button>
-        </form>
-
-        {/* Edit Modal / Inline Form */}
-        {editingGoal && (
-          <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <strong style={{ fontSize: '0.95rem', color: '#14b8a6' }}>Edit Goal Target</strong>
-              <button type="button" onClick={() => setEditingGoal(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={16} /></button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }} required />
-              <input type="number" value={editTarget} onChange={e => setEditTarget(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }} required />
-              <button type="submit" className="btn-primary" style={{ padding: '0.5rem', fontSize: '0.85rem', backgroundColor: '#14b8a6' }}>
-                Save Changes
-              </button>
-            </form>
-          </div>
-        )}
-
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Active Goals & Circular Progress</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '420px', overflowY: 'auto' }}>
-          {goals && goals.length > 0 ? (
-            goals.map((g, i) => {
-              const current = g.currentValue || 0;
-              const targetVal = g.targetValue || 1;
-              const pct = Math.min(100, Math.round((current / targetVal) * 100));
-              const isDone = current >= targetVal;
-
-              return (
-                <div key={g._id || i} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  {/* Progress Ring SVG */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ position: 'relative', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="48" height="48" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.08)" strokeWidth="4" fill="transparent" />
-                        <circle 
-                          cx="24" 
-                          cy="24" 
-                          r="20" 
-                          stroke={isDone ? '#10b981' : '#14b8a6'} 
-                          strokeWidth="4" 
-                          fill="transparent" 
-                          strokeDasharray={125}
-                          strokeDashoffset={125 - (125 * (pct / 100))} 
-                          strokeLinecap="round"
-                          transform="rotate(-90 24 24)"
-                          style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
-                        />
-                      </svg>
-                      <span style={{ position: 'absolute', fontSize: '0.65rem', fontWeight: 'bold' }}>{pct}%</span>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{g.title}</span>
-                        <span className={`badge-status ${isDone ? 'badge-completed' : 'badge-active'}`}>
-                          {isDone ? 'COMPLETED' : 'ACTIVE'}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginTop: '0.2rem' }}>
-                        Progress: {current} / {targetVal}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button type="button" onClick={() => addLogToGoal(g._id, 1)} style={{ padding: '0.35rem 0.65rem', backgroundColor: 'rgba(20, 184, 166, 0.2)', border: '1px solid rgba(20, 184, 166, 0.4)', borderRadius: '0.35rem', color: '#14b8a6', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                      + Progress
-                    </button>
-                    <button type="button" onClick={() => handleOpenEdit(g)} style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer' }}>
-                      <Edit2 size={16} />
-                    </button>
-                    {g.isCustom && (
-                      <button type="button" onClick={() => deleteGoal(g._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>No wellness goals created yet.</p>
-          )}
-        </div>
+    <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      
+      {/* Goal Streak Card matching Page 19 */}
+      <div className="glass-panel" style={{ padding: '1.75rem', textAlign: 'center' }}>
+        <Flame size={32} color="#ff9f43" style={{ margin: '0 auto 0.5rem' }} />
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ff9f43', margin: '0 0 0.25rem 0' }}>
+          Goal Streak: 0 Days
+        </h2>
+        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
+          Log daily to maintain your adaptivity streaks.
+        </span>
       </div>
 
-      {/* Right Column: Streaks & Badges */}
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        {/* Streak Counter Card */}
-        <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
-          <Flame size={36} color="#f59e0b" className="neon-glow-amber" style={{ margin: '0 auto 0.35rem' }} />
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold', letterSpacing: '1px' }}>WELLNESS HABIT STREAK</span>
-          <h2 style={{ fontSize: '2rem', fontWeight: '900', color: '#f59e0b', margin: '0.25rem 0' }}>🔥 5 Day Streak</h2>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>Logged sleep, caffeine & hydration consistently!</p>
-        </div>
+      {/* Today Wellness Targets Section matching Page 19 */}
+      <div>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#ffffff', marginBottom: '1.25rem' }}>
+          Today Wellness Targets
+        </h3>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <Award size={24} color="#f59e0b" />
-          <h3 style={{ fontSize: '1.1rem' }}>Unlocked Achievements</h3>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {(streakInfo?.badges || [
-            { title: 'First Step', description: 'Joined Guardian-Sync and started tracking wellness.', icon: '🌱', unlocked: true },
-            { title: 'Sleep Champion', description: 'Logged sleep 3+ times to manage sleep debt.', icon: '😴', unlocked: true },
-            { title: 'Night Shift Survivor', description: 'Completed 3+ overnight shifts.', icon: '🦇', unlocked: true },
-            { title: 'Caffeine Commander', description: 'Logged caffeine intake 5+ times.', icon: '☕', unlocked: true }
-          ]).map((b, i) => (
-            <div key={i} className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', opacity: b.unlocked ? 1 : 0.4 }}>
-              <span style={{ fontSize: '2rem' }}>{b.icon}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          {/* Target 1: Sleep Duration */}
+          <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
+                <Moon size={22} />
+              </div>
               <div>
-                <strong style={{ display: 'block', fontSize: '0.95rem' }}>{b.title}</strong>
-                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>{b.description}</span>
+                <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>
+                  Sleep Duration
+                </strong>
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>≥ 8 hrs</span>
               </div>
             </div>
-          ))}
+            <button className="btn-purple" style={{ padding: '0.45rem 0.95rem', fontSize: '0.8rem', borderRadius: '0.5rem' }}>
+              + Add Log
+            </button>
+          </div>
+
+          {/* Target 2: Caffeine Intake */}
+          <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 188, 212, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00bcd4' }}>
+                <Coffee size={22} />
+              </div>
+              <div>
+                <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>
+                  Caffeine Intake
+                </strong>
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>≤ 400 mg</span>
+              </div>
+            </div>
+            <button className="btn-cyan" style={{ padding: '0.45rem 0.95rem', fontSize: '0.8rem', borderRadius: '0.5rem' }}>
+              + Add Log
+            </button>
+          </div>
+
+          {/* Target 3: Hydration Intake */}
+          <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
+                <Droplets size={22} />
+              </div>
+              <div>
+                <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>
+                  Hydration Intake
+                </strong>
+                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>≥ 3000 ml</span>
+              </div>
+            </div>
+            <button className="btn-purple" style={{ padding: '0.45rem 0.95rem', fontSize: '0.8rem', borderRadius: '0.5rem' }}>
+              + Add Log
+            </button>
+          </div>
+
+        </div>
+
+        {/* Primary Cyan Button matching Page 19 */}
+        <button 
+          onClick={() => setShowAddModal(!showAddModal)}
+          className="btn-cyan" 
+          style={{ width: '100%', padding: '0.95rem', fontSize: '1rem', borderRadius: '0.65rem', marginTop: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+        >
+          <Plus size={18} /> Add New Goal
+        </button>
+
+        {showAddModal && (
+          <form onSubmit={handleAddGoal} className="glass-panel" style={{ padding: '1.25rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <input 
+              type="text" 
+              placeholder="Goal Title" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              className="input-field" 
+              required 
+            />
+            <input 
+              type="number" 
+              placeholder="Target Value" 
+              value={target} 
+              onChange={e => setTarget(e.target.value)} 
+              className="input-field" 
+              required 
+            />
+            <button type="submit" className="btn-cyan">Save Goal</button>
+          </form>
+        )}
+      </div>
+
+      {/* Merit Badges & Awards Section matching Page 19 */}
+      <div className="glass-panel" style={{ padding: '1.75rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#ffffff', marginBottom: '1.25rem' }}>
+          Merit Badges & Awards
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          
+          {/* Badge 1 */}
+          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'rgba(0, 184, 148, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00b894' }}>
+              <Sprout size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>First Step</strong>
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Unlocked</span>
+            </div>
+          </div>
+
+          {/* Badge 2 */}
+          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
+              <Moon size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>Sleep Champion</strong>
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Unlocked</span>
+            </div>
+          </div>
+
         </div>
       </div>
+
     </div>
   );
 }
+

@@ -6,61 +6,31 @@ import {
   Coffee, 
   Utensils, 
   Clock, 
-  Shield, 
-  Sparkles, 
-  Send, 
   Droplets, 
   Plus, 
-  ArrowRight, 
   Zap, 
-  Flame, 
-  Car 
+  Car,
+  ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function DashboardScreen() {
-  const { dashboardData, user, addAILog, logHydration } = useContext(AppContext);
+  const { dashboardData, user, logHydration } = useContext(AppContext);
   const [customWater, setCustomWater] = useState('250');
-  const [aiInput, setAiInput] = useState('');
-  const [aiFeedback, setAiFeedback] = useState(null);
-  const [isParsing, setIsParsing] = useState(false);
 
   const { 
-    fatigueScore = 28, 
+    fatigueScore = 5, 
     fatigueLevel = 'Low', 
-    sleepDebt = 1.5, 
-    activeCaffeine = 45, 
-    recoveryScore = 82,
-    waterIntake = 1250,
-    awakeHours = 6.2,
-    driveSafety = { status: 'SAFE', color: '#10B981', advice: 'Safe to drive home.' },
+    sleepDebt = 1.0, 
+    activeCaffeine = 0, 
+    recoveryScore = 85,
+    waterIntake = 0,
+    driveSafety = { status: 'SAFE', color: '#00b894', advice: 'You are safe to drive. Stay hydrated.' },
     activeShift = null
   } = dashboardData || {};
 
   const waterGoal = user?.waterGoal || 3000;
   const waterPct = Math.min(100, Math.round((waterIntake / waterGoal) * 100));
-
-  const getGaugeColor = (score) => {
-    if (score >= 80) return '#EF4444'; // Red
-    if (score >= 60) return '#F59E0B'; // Orange
-    if (score >= 40) return '#FBBF24'; // Yellow
-    return '#10B981'; // Green
-  };
-
-  const gaugeColor = getGaugeColor(fatigueScore);
-
-  const handleAISubmit = async (e) => {
-    e.preventDefault();
-    if (!aiInput.trim()) return;
-
-    setIsParsing(true);
-    setAiFeedback(null);
-    
-    const result = await addAILog(aiInput);
-    setIsParsing(false);
-    setAiFeedback(result);
-    setAiInput('');
-  };
 
   const handleLogWater = async (amount) => {
     const ml = amount || parseInt(customWater, 10);
@@ -69,243 +39,190 @@ export default function DashboardScreen() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Banner */}
-      <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Header Greeting block matching Page 3 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-            Hello, <span style={{ color: '#8b5cf6' }}>{user ? user.name || 'Healthcare Worker' : 'Healthcare Worker'}</span>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#ffffff', margin: 0 }}>
+            Hello, {user ? user.name || 'hanuman' : 'hanuman'}
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>
-            {user ? `${user.role || 'Doctor'} • ${user.hospital || 'City General Hospital'} (${user.department || 'ICU'})` : 'Healthcare Wellness & Fatigue Tracking'}
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+            {user ? `${user.role || 'Doctor'} | ${user.department || 'ICU'}` : 'Doctor | ICU'}
           </p>
         </div>
-
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div className="glass-card" style={{ padding: '0.75rem 1.25rem', textAlign: 'center', minWidth: '110px' }}>
-            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', display: 'block', fontWeight: 'bold' }}>READINESS</span>
-            <span style={{ fontSize: '1.35rem', fontWeight: '800', color: '#10b981' }}>{recoveryScore}%</span>
-          </div>
-          <div className="glass-card" style={{ padding: '0.75rem 1.25rem', textAlign: 'center', minWidth: '110px' }}>
-            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', display: 'block', fontWeight: 'bold' }}>HOURS AWAKE</span>
-            <span style={{ fontSize: '1.35rem', fontWeight: '800', color: '#06b6d4' }}>{awakeHours}h</span>
-          </div>
-        </div>
       </div>
 
-      {/* Prominent AI Natural Language Quick Input Bar */}
-      <div className="glass-panel" style={{ padding: '1.25rem', backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <Sparkles size={20} color="#06b6d4" className="neon-glow-cyan" />
-          <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>AI Natural Language Quick Logger</span>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginLeft: 'auto' }}>Type anything e.g. "Slept 7 hours and drank 2 coffees"</span>
-        </div>
-
-        <form onSubmit={handleAISubmit} style={{ display: 'flex', gap: '0.75rem' }}>
-          <input 
-            type="text" 
-            placeholder="Type e.g. 'Drank 2 cups of filter coffee', 'Slept 8 hours', 'Worked 12h night shift'..." 
-            value={aiInput}
-            onChange={e => setAiInput(e.target.value)}
-            className="input-field" 
-            style={{ paddingLeft: '1rem' }}
-          />
-          <button type="submit" className="btn-primary" disabled={isParsing} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap', backgroundColor: '#06b6d4' }}>
-            <Send size={16} /> {isParsing ? 'Parsing...' : 'Parse & Log'}
-          </button>
-        </form>
-
-        {aiFeedback && (
-          <div className="glass-card" style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', backgroundColor: aiFeedback.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', borderColor: aiFeedback.success ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)', fontSize: '0.85rem', color: aiFeedback.success ? '#10b981' : '#ef4444' }}>
-            {aiFeedback.summary}
+      {/* Drive Safety Status Banner matching Page 3 */}
+      <div className="glass-panel" style={{ 
+        padding: '1.25rem 1.5rem', 
+        borderColor: 'rgba(0, 184, 148, 0.4)', 
+        backgroundColor: 'rgba(0, 184, 148, 0.08)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        borderRadius: '0.85rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ 
+            width: '46px', 
+            height: '46px', 
+            borderRadius: '0.75rem', 
+            backgroundColor: 'rgba(0, 184, 148, 0.2)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: '#00b894'
+          }}>
+            <Car size={24} />
           </div>
-        )}
-      </div>
-
-      {/* Safe-to-Drive Alert Card */}
-      <div className="glass-panel" style={{ padding: '1.25rem', borderColor: driveSafety.color, backgroundColor: 'rgba(15, 23, 42, 0.8)', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <Car size={32} color={driveSafety.color} />
-        <div style={{ flex: 1, minWidth: '240px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>DRIVE SAFETY STATUS:</span>
-            <span style={{ fontWeight: '900', color: driveSafety.color, fontSize: '1rem' }}>{driveSafety.status}</span>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#00b894', letterSpacing: '0.5px' }}>
+              DRIVE SAFETY: {driveSafety.status}
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.8)', marginTop: '0.2rem' }}>
+              {driveSafety.advice}
+            </p>
           </div>
-          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginTop: '0.25rem' }}>{driveSafety.advice}</p>
         </div>
-        <Link to="/drive-safety" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', textDecoration: 'none' }}>
-          Safety Guidelines
+        <Link to="/drive-safety" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>
+          <ChevronRight size={22} />
         </Link>
       </div>
 
-      {/* Circular Gauge + Quick Logger Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        {/* Fatigue Index Circular SVG Gauge */}
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold', letterSpacing: '1px', alignSelf: 'flex-start', marginBottom: '1rem' }}>
-            FATIGUE SCORE GAUGE
+      {/* Row 1: Fatigue Score Gauge + 4 Quick Navigation Action Cards matching Page 3 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
+        
+        {/* Fatigue Score Circular Gauge Card */}
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', fontWeight: '700', alignSelf: 'flex-start', marginBottom: '1rem' }}>
+            Fatigue Score
           </span>
 
-          <div style={{ position: 'relative', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="160" height="160" viewBox="0 0 160 160">
-              <circle cx="80" cy="80" r="70" stroke="rgba(255,255,255,0.08)" strokeWidth="12" fill="transparent" />
+          <div style={{ position: 'relative', width: '150px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <circle cx="75" cy="75" r="62" stroke="rgba(255,255,255,0.08)" strokeWidth="10" fill="transparent" />
               <circle 
-                cx="80" 
-                cy="80" 
-                r="70" 
-                stroke={gaugeColor} 
-                strokeWidth="12" 
+                cx="75" 
+                cy="75" 
+                r="62" 
+                stroke="#00b894" 
+                strokeWidth="10" 
                 fill="transparent" 
-                strokeDasharray={440}
-                strokeDashoffset={440 - (440 * (fatigueScore / 100))} 
+                strokeDasharray={390}
+                strokeDashoffset={390 - (390 * (fatigueScore / 100))} 
                 strokeLinecap="round"
-                transform="rotate(-90 80 80)"
+                transform="rotate(-90 75 75)"
                 style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
               />
             </svg>
             <div style={{ position: 'absolute', textAlign: 'center' }}>
               <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', display: 'block', lineHeight: '1' }}>{fatigueScore}</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: gaugeColor }}>{fatigueLevel} Risk</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#00b894', marginTop: '0.2rem', display: 'block' }}>{fatigueLevel}</span>
             </div>
           </div>
 
           <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '1rem' }}>
-            Calculated from sleep debt, awake duration & caffeine decay
+            Score: {fatigueScore}/100
           </span>
         </div>
 
-        {/* Quick Action Grid */}
+        {/* 4 Quick Action Cards 2x2 Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <Link to="/sleep" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Moon size={22} color="#6366f1" />
-              <ArrowRight size={16} color="rgba(255,255,255,0.3)" />
+          <Link to="/sleep" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6', marginBottom: '0.6rem' }}>
+              <Moon size={22} />
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <strong style={{ display: 'block', fontSize: '1rem' }}>Log Sleep</strong>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Track sleep duration</span>
-            </div>
+            <strong style={{ fontSize: '0.95rem', fontWeight: '700' }}>Sleep</strong>
           </Link>
 
-          <Link to="/caffeine" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Coffee size={22} color="#f59e0b" />
-              <ArrowRight size={16} color="rgba(255,255,255,0.3)" />
+          <Link to="/caffeine" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 188, 212, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00bcd4', marginBottom: '0.6rem' }}>
+              <Coffee size={22} />
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <strong style={{ display: 'block', fontSize: '1rem' }}>Log Coffee</strong>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Active caffeine decay</span>
-            </div>
+            <strong style={{ fontSize: '0.95rem', fontWeight: '700' }}>Caffeine</strong>
           </Link>
 
-          <Link to="/nutrition" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Utensils size={22} color="#10b981" />
-              <ArrowRight size={16} color="rgba(255,255,255,0.3)" />
+          <Link to="/nutrition" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 184, 148, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00b894', marginBottom: '0.6rem' }}>
+              <Utensils size={22} />
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <strong style={{ display: 'block', fontSize: '1rem' }}>Log Nutrition</strong>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Meals & calories</span>
-            </div>
+            <strong style={{ fontSize: '0.95rem', fontWeight: '700' }}>Nutrition</strong>
           </Link>
 
-          <Link to="/shifts" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Clock size={22} color="#ec4899" />
-              <ArrowRight size={16} color="rgba(255,255,255,0.3)" />
+          <Link to="/shifts" className="glass-card" style={{ padding: '1.25rem', textDecoration: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(255, 159, 67, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff9f43', marginBottom: '0.6rem' }}>
+              <Clock size={22} />
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <strong style={{ display: 'block', fontSize: '1rem' }}>Duty Shifts</strong>
-              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Night & on-call roster</span>
-            </div>
+            <strong style={{ fontSize: '0.95rem', fontWeight: '700' }}>Shifts</strong>
           </Link>
         </div>
       </div>
 
-      {/* 4 Health Metric Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
+      {/* Row 2: 4 Health Metric Cards matching Page 3 & 4 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+        
         {/* Sleep Debt */}
         <div className="glass-panel" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>SLEEP DEBT</span>
-            <Moon size={18} color="#6366f1" />
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Sleep Debt</span>
+            <Moon size={18} color="#8b5cf6" />
           </div>
-          <span style={{ fontSize: '2rem', fontWeight: '800', display: 'block' }}>{sleepDebt} hrs</span>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>7-day cumulative debt</span>
+          <span style={{ fontSize: '1.85rem', fontWeight: '800', display: 'block' }}>{sleepDebt.toFixed(1)} hrs</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>Last 7 days</span>
         </div>
 
         {/* Active Caffeine */}
         <div className="glass-panel" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>ACTIVE CAFFEINE</span>
-            <Coffee size={18} color="#f59e0b" />
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Active Caffeine</span>
+            <Coffee size={18} color="#00bcd4" />
           </div>
-          <span style={{ fontSize: '2rem', fontWeight: '800', display: 'block' }}>{activeCaffeine} mg</span>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>5-hr half-life metabolism</span>
+          <span style={{ fontSize: '1.85rem', fontWeight: '800', display: 'block' }}>{activeCaffeine} mg</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>Curfew checks</span>
         </div>
 
-        {/* Custom Hydration Logger Card */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>HYDRATION LOGGER</span>
-            <Droplets size={18} color="#06b6d4" className="neon-glow-cyan" />
+        {/* Hydration Today */}
+        <div className="glass-panel" style={{ padding: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Hydration Today</span>
+            <Droplets size={18} color="#00bcd4" />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem' }}>
-            <span style={{ fontSize: '1.5rem', fontWeight: '800' }}>{waterIntake} / {waterGoal} ml</span>
-            <span style={{ fontSize: '0.8rem', color: '#06b6d4', fontWeight: 'bold' }}>{waterPct}%</span>
-          </div>
-          
-          <div className="progress-bar-track" style={{ marginBottom: '0.75rem' }}>
-            <div className="progress-bar-fill" style={{ width: `${waterPct}%`, backgroundColor: waterPct >= 100 ? '#10b981' : '#06b6d4' }} />
-          </div>
+          <span style={{ fontSize: '1.5rem', fontWeight: '800', display: 'block', marginBottom: '0.75rem' }}>
+            {waterIntake} / {waterGoal} ml
+          </span>
 
-          {/* Preset Buttons + Custom Input Field + Log Water Button */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', gap: '0.35rem' }}>
-              <button type="button" onClick={() => handleLogWater(250)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
-                +250ml
-              </button>
-              <button type="button" onClick={() => handleLogWater(500)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: 'bold', backgroundColor: 'rgba(6, 182, 212, 0.2)', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '0.25rem', color: '#06b6d4', cursor: 'pointer' }}>
-                +500ml
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-              <input 
-                type="number" 
-                value={customWater} 
-                onChange={e => setCustomWater(e.target.value)} 
-                placeholder="ml"
-                className="input-field" 
-                style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', height: '32px', textAlign: 'center' }} 
-              />
-              <button 
-                type="button" 
-                onClick={() => handleLogWater()} 
-                className="btn-primary" 
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', height: '32px', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', backgroundColor: '#06b6d4' }}
-              >
-                <Plus size={14} /> Log Water
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
+            <button type="button" onClick={() => handleLogWater(250)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: '700', backgroundColor: 'rgba(0, 184, 148, 0.15)', border: '1px solid rgba(0, 184, 148, 0.3)', borderRadius: '0.35rem', color: '#00b894', cursor: 'pointer' }}>
+              +250ml
+            </button>
+            <button type="button" onClick={() => handleLogWater(500)} style={{ flex: 1, padding: '0.35rem', fontSize: '0.75rem', fontWeight: '700', backgroundColor: 'rgba(0, 184, 148, 0.15)', border: '1px solid rgba(0, 184, 148, 0.3)', borderRadius: '0.35rem', color: '#00b894', cursor: 'pointer' }}>
+              +500ml
+            </button>
+            <button type="button" onClick={() => handleLogWater(200)} style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: '700', backgroundColor: 'rgba(0, 188, 212, 0.15)', border: '1px solid rgba(0, 188, 212, 0.3)', borderRadius: '0.35rem', color: '#00bcd4', cursor: 'pointer' }}>
+              +Custom
+            </button>
           </div>
         </div>
 
         {/* Last Sleep Recovery */}
         <div className="glass-panel" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>SLEEP RECOVERY</span>
-            <Zap size={18} color="#10b981" />
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Last Sleep Recovery</span>
+            <Zap size={18} color="#ff9f43" />
           </div>
-          <span style={{ fontSize: '2rem', fontWeight: '800', display: 'block', color: '#10b981' }}>{recoveryScore}%</span>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Latest session score</span>
+          <span style={{ fontSize: '1.85rem', fontWeight: '800', display: 'block' }}>{recoveryScore}%</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.25rem', display: 'block' }}>Session score</span>
         </div>
       </div>
 
-      {/* Active Shift Card */}
-      <div className="glass-panel" style={{ padding: '1.25rem' }}>
-        <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>Active Duty Roster Tracking</h3>
+      {/* Active Roster Tracking matching Page 4 */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.75rem', color: '#ffffff' }}>
+          Active Roster Tracking
+        </h3>
         {activeShift ? (
-          <div className="glass-card" style={{ padding: '1rem', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Clock size={24} color="#f59e0b" />
+          <div className="glass-card" style={{ padding: '1rem', borderColor: '#ff9f43', backgroundColor: 'rgba(255, 159, 67, 0.1)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <Clock size={24} color="#ff9f43" />
             <div>
               <strong style={{ display: 'block', fontSize: '0.95rem' }}>Working {activeShift.type} Duty Shift</strong>
               <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Elapsed: {activeShift.duration} hours</span>
@@ -313,9 +230,9 @@ export default function DashboardScreen() {
           </div>
         ) : (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>No active duty shift currently logged (Off-Duty Rest).</span>
-            <Link to="/shifts" className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', textDecoration: 'none', backgroundColor: '#f59e0b' }}>
-              Log Duty Shift
+            <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>No active duty shift logged.</span>
+            <Link to="/shifts" className="btn-orange" style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem', textDecoration: 'none', borderRadius: '0.6rem' }}>
+              Log Shift
             </Link>
           </div>
         )}
@@ -323,3 +240,4 @@ export default function DashboardScreen() {
     </div>
   );
 }
+

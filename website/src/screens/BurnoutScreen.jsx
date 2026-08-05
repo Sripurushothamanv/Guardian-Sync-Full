@@ -1,116 +1,109 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../AppContext';
-import { Flame, ShieldAlert, HeartPulse, Sparkles, TrendingUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Clock, Droplets, Calendar } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 export default function BurnoutScreen() {
   const { dashboardData } = useContext(AppContext);
-  const fatigueScore = dashboardData?.fatigueScore || 28;
-  const burnoutRisk = fatigueScore >= 70 ? 'HIGH' : fatigueScore >= 40 ? 'MODERATE' : 'LOW';
-  const color = burnoutRisk === 'HIGH' ? '#ef4444' : burnoutRisk === 'MODERATE' ? '#f59e0b' : '#10b981';
 
-  // 7-day cumulative trend data
   const trendData = [
-    { day: 'MON', burnout: Math.min(100, Math.max(0, fatigueScore - 12)) },
-    { day: 'TUE', burnout: Math.min(100, Math.max(0, fatigueScore - 5)) },
-    { day: 'WED', burnout: Math.min(100, Math.max(0, fatigueScore + 15)) },
-    { day: 'THU', burnout: Math.min(100, Math.max(0, fatigueScore - 8)) },
-    { day: 'FRI', burnout: Math.min(100, Math.max(0, fatigueScore + 10)) },
-    { day: 'SAT', burnout: Math.min(100, Math.max(0, fatigueScore + 4)) },
-    { day: 'SUN', burnout: Math.min(100, fatigueScore) }
+    { day: 'Mon', score: 0 },
+    { day: 'Tue', score: 2 },
+    { day: 'Wed', score: 9 },
+    { day: 'Thu', score: 16 },
+    { day: 'Fri', score: 23 },
+    { day: 'Sat', score: 30 },
+    { day: 'Sun', score: 37 }
   ];
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-card" style={{ padding: '0.5rem 0.75rem', backgroundColor: '#161C36', borderColor: '#8b5cf6' }}>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold' }}>{label}</span>
-          <span style={{ fontSize: '0.9rem', color: '#8b5cf6', fontWeight: 'bold', display: 'block' }}>
-            Burnout Index: {payload[0].value}%
-          </span>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div style={{ maxWidth: '950px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      
+      {/* Top Hero Card matching Page 15 */}
       <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-        <Flame size={48} color={color} style={{ margin: '0 auto 0.5rem' }} className="neon-glow-rose" />
-        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 'bold', letterSpacing: '1.5px' }}>CLINICAL BURNOUT RISK INDEX</span>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color, margin: '0.5rem 0' }}>{burnoutRisk} RISK LEVEL</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', maxWidth: '600px', margin: '0 auto 1.5rem' }}>
-          Calculated from consecutive night shifts, 7-day sleep debt, and active caffeine accumulation.
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>EXHAUSTION SCORE</span>
-            <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color }}>{fatigueScore}%</span>
-          </div>
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>RECOVERY BUFFER</span>
-            <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#10b981' }}>{dashboardData?.recoveryScore || 80}%</span>
-          </div>
-          <div className="glass-card" style={{ padding: '1.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>SLEEP DEBT</span>
-            <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#6366f1' }}>{dashboardData?.sleepDebt || 1.5}h</span>
-          </div>
-        </div>
+        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
+          Weekly Fatigue Average
+        </span>
+        <h1 style={{ fontSize: '4.5rem', fontWeight: '900', color: '#8b5cf6', margin: '0.25rem 0 0.5rem 0', lineHeight: 1 }}>
+          17%
+        </h1>
+        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+          High Risk threshold: 70%
+        </span>
       </div>
 
-      {/* 7-Day Cumulative Burnout Trend Recharts LineChart */}
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <TrendingUp size={20} color="#8b5cf6" /> 7-Day Cumulative Burnout Trend
-            </h3>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Clamped Y-axis index (0% to 100%)</span>
-          </div>
-          <span className="badge-neon badge-time">MON - SUN</span>
-        </div>
+      {/* 7-Day Cumulative Burnout Trend Bar Chart matching Page 15 */}
+      <div className="glass-panel" style={{ padding: '1.75rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#ffffff', marginBottom: '1.5rem' }}>
+          7-Day Cumulative Burnout Trend
+        </h3>
 
-        <div style={{ width: '100%', height: 260 }}>
+        <div style={{ width: '100%', height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" tickLine={false} />
-              <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.5)" tickLine={false} unit="%" />
-              <Tooltip content={<CustomTooltip />} />
-              <Line 
-                type="monotone" 
-                dataKey="burnout" 
-                stroke="#8b5cf6" 
-                strokeWidth={3}
-                dot={{ fill: '#8b5cf6', r: 5, strokeWidth: 2, stroke: '#0C0F20' }}
-                activeDot={{ r: 8, stroke: '#06b6d4', strokeWidth: 2 }}
-              />
-            </LineChart>
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" tickLine={false} />
+              <YAxis domain={[0, 100]} stroke="rgba(255,255,255,0.6)" tickLine={false} />
+              <Bar dataKey="score" fill="#00b894" radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#00b894', fontSize: 12, fontWeight: 'bold' }} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={20} color="#06b6d4" /> Clinical Interventions & Preventative Care
+      {/* Burnout Preventative Protocols matching Page 15 */}
+      <div className="glass-panel" style={{ padding: '1.75rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#ffffff', marginBottom: '1.25rem' }}>
+          Burnout Preventative Protocols
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div className="glass-card" style={{ padding: '1rem' }}>
-            <strong style={{ color: '#06b6d4', display: 'block', marginBottom: '0.25rem' }}>1. Strategic Micro-Naps</strong>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>A 20-minute power nap in call-rooms reduces alertness fatigue by 35% without sleep inertia.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 184, 148, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00b894' }}>
+              <Clock size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block', marginBottom: '0.25rem' }}>
+                Circadian Adaptation Gap
+              </strong>
+              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>
+                Observe at least 11 hours of resting separation between shifts.
+              </span>
+            </div>
           </div>
-          <div className="glass-card" style={{ padding: '1rem' }}>
-            <strong style={{ color: '#06b6d4', display: 'block', marginBottom: '0.25rem' }}>2. Post-Shift Hydration Protocol</strong>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Drink 500ml of water at shift end to counter active caffeine vasoconstriction.</p>
+
+          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 184, 148, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00b894' }}>
+              <Droplets size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block', marginBottom: '0.25rem' }}>
+                Hydration Saturation
+              </strong>
+              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>
+                Drink 500ml of mineralized water for every cup of coffee logged.
+              </span>
+            </div>
           </div>
-          <div className="glass-card" style={{ padding: '1rem' }}>
-            <strong style={{ color: '#06b6d4', display: 'block', marginBottom: '0.25rem' }}>3. Dark & Quiet Recovery Environment</strong>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Use blackout curtains and earplugs to achieve deep REM cycles after night shifts.</p>
+
+          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '0.65rem', backgroundColor: 'rgba(0, 184, 148, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00b894' }}>
+              <Calendar size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block', marginBottom: '0.25rem' }}>
+                Roster caps
+              </strong>
+              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>
+                Limit schedule rosters to maximum 3 consecutive night-shift duties.
+              </span>
+            </div>
           </div>
+
         </div>
       </div>
+
     </div>
   );
 }
+

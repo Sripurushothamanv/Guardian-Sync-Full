@@ -1,23 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-dark: #0C0F20;
-  --bg-card: rgba(22, 28, 54, 0.75);
-  --bg-card-solid: #161C36;
-  --bg-card-hover: rgba(30, 38, 72, 0.85);
+  --bg-dark: #080b15;
+  --bg-card: rgba(20, 26, 46, 0.85);
+  --bg-card-solid: #151b30;
+  --bg-card-hover: rgba(28, 36, 64, 0.9);
   --accent-purple: #8b5cf6;
-  --accent-cyan: #06b6d4;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
+  --accent-purple-dark: #7c3aed;
+  --accent-cyan: #00bcd4;
+  --accent-cyan-dark: #0097a7;
+  --accent-emerald: #00b894;
+  --accent-amber: #ff9f43;
   --accent-rose: #ef4444;
   --accent-pink: #ec4899;
   --text-main: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.65);
   --text-dim: rgba(255, 255, 255, 0.4);
   --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(139, 92, 246, 0.25);
-  --shadow-glow: 0 8px 32px 0 rgba(139, 92, 246, 0.15);
-  --shadow-card: 0 4px 24px 0 rgba(0, 0, 0, 0.4);
+  --border-glow: rgba(0, 188, 212, 0.3);
+  --shadow-glow: 0 8px 32px 0 rgba(0, 188, 212, 0.15);
+  --shadow-card: 0 4px 24px 0 rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -79,7 +81,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================
-   GLASSMORPHISM CONTAINERS
+   GLASSMORPHISM & CARDS
    ========================================== */
 
 .glass-panel {
@@ -93,81 +95,183 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-card-solid);
   border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
   transition: all 0.25s ease-in-out;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-glow);
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 
-/* ==========================================
-   NEON GLOW UTILITIES
-   ========================================== */
-
-.neon-glow-purple {
-  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
-}
-
-.neon-glow-cyan {
-  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
-}
-
-.neon-glow-emerald {
-  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
-}
-
-.neon-glow-amber {
-  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
-}
-
-.neon-glow-rose {
-  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
-}
-
-/* ==========================================
-   LAYOUT GRID
-   ========================================== */
-
+/* App Dark Container */
 .app-container {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg-dark);
 }
 
+.app-layout-body {
+  display: flex;
+  flex: 1;
+}
+
 .sidebar {
-  width: 260px;
-  background: rgba(12, 15, 32, 0.97);
+  width: 270px;
+  background: #0d1222;
   border-right: 1px solid var(--border-glass);
-  padding: 1.5rem 1rem;
+  padding: 1.25rem 1rem;
   display: flex;
   flex-direction: column;
   position: fixed;
-  height: 100vh;
-  z-index: 50;
-  backdrop-filter: blur(12px);
+  top: 60px;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  overflow-y: auto;
 }
 
 .main-content {
   flex: 1;
-  margin-left: 260px;
-  padding: 2rem;
+  margin-left: 270px;
+  margin-top: 60px;
+  padding: 1.75rem 2rem 3rem 2rem;
   max-width: 1400px;
   background: var(--bg-dark);
-  min-height: 100vh;
+  min-height: calc(100vh - 60px);
+}
+
+/* Persistent TopBar */
+.topbar {
+  height: 60px;
+  background: #0a0e1c;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 /* ==========================================
-   BUTTONS
+   BUTTON VARIATIONS
    ========================================== */
 
+.btn-cyan {
+  background: var(--accent-cyan);
+  color: #000000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0, 188, 212, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-cyan:hover {
+  background: #26c6da;
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-purple {
+  background: var(--accent-purple);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-purple:hover {
+  background: #9d72ff;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-teal {
+  background: var(--accent-emerald);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0, 184, 148, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-teal:hover {
+  background: #1dd1a1;
+  box-shadow: 0 6px 20px rgba(0, 184, 148, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-orange {
+  background: var(--accent-amber);
+  color: #000000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(255, 159, 67, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-orange:hover {
+  background: #ffaf60;
+  box-shadow: 0 6px 20px rgba(255, 159, 67, 0.5);
+  transform: translateY(-1px);
+}
+
 .btn-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  background: var(--accent-purple);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -177,6 +281,128 @@ h1, h2, h3, h4, h5, h6 {
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+
+.btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+}
+
+/* TopBar AI Log button */
+.btn-ai-log {
+  background: rgba(0, 188, 212, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+
+.btn-ai-log:hover {
+  background: rgba(0, 188, 212, 0.25);
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.4);
+}
+
+/* ==========================================
+   TAB CONTROL SWITCHER
+   ========================================== */
+
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-button.active {
+  color: var(--text-main);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-purple);
+  border-radius: 2px;
+}
+
+/* Custom Range Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+}
+
+/* Stepper Control */
+.stepper-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.stepper-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+}
+
+.stepper-btn.plus {
+  background: var(--accent-cyan);
+  color: black;
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.4);
+}
+
+.stepper-btn:hover {
+  transform: scale(1.08);
 }
 
 .btn-primary:hover {

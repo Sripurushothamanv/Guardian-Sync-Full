@@ -1,212 +1,219 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import AIVoiceBar from '../components/AIVoiceBar';
-import { Moon, Clock, Star, Calendar, Sun } from 'lucide-react';
+import { Moon, Sun, Sparkles, Clock, Calendar } from 'lucide-react';
 
 export default function SleepScreen() {
   const { addLog, logs, dashboardData, setAwakeHours } = useContext(AppContext);
+  const [activeTab, setActiveTab] = useState('manual');
   
-  // Bedtime selectors (12-hour format)
-  const [bedHour, setBedHour] = useState('11');
-  const [bedMin, setBedMin] = useState('00');
-  const [bedAmPm, setBedAmPm] = useState('PM');
-  
-  // Wake-Up selectors (12-hour format)
-  const [wakeHour, setWakeHour] = useState('07');
-  const [wakeMin, setWakeMin] = useState('30');
-  const [wakeAmPm, setWakeAmPm] = useState('AM');
-
-  const [duration, setDuration] = useState('8.5');
+  const [bedtime, setBedtime] = useState('11:00 PM');
+  const [wakeTime, setWakeTime] = useState('06:30 AM');
+  const [duration, setDuration] = useState(7.5);
+  const [awakeHoursInput, setAwakeHoursInput] = useState(6.0);
   const [quality, setQuality] = useState('Good');
-  const [wakeUps, setWakeUps] = useState('0');
-  const [hoursAwakeInput, setHoursAwakeInput] = useState(dashboardData?.awakeHours || 6.2);
+  const [interruptions, setInterruptions] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  // Helper to convert 12-hour format to Date object for today/yesterday
-  const calculateDurationFromTimes = () => {
-    let bedH = parseInt(bedHour, 10);
-    if (bedAmPm === 'PM' && bedH < 12) bedH += 12;
-    if (bedAmPm === 'AM' && bedH === 12) bedH = 0;
-    const bedM = parseInt(bedMin, 10);
-
-    let wakeH = parseInt(wakeHour, 10);
-    if (wakeAmPm === 'PM' && wakeH < 12) wakeH += 12;
-    if (wakeAmPm === 'AM' && wakeH === 12) wakeH = 0;
-    const wakeM = parseInt(wakeMin, 10);
-
-    let bedMinutes = bedH * 60 + bedM;
-    let wakeMinutes = wakeH * 60 + wakeM;
-
-    if (wakeMinutes <= bedMinutes) {
-      wakeMinutes += 24 * 60; // Crosses midnight
-    }
-
-    const diffHrs = (wakeMinutes - bedMinutes) / 60;
-    setDuration(diffHrs.toFixed(1));
-  };
-
-  useEffect(() => {
-    calculateDurationFromTimes();
-  }, [bedHour, bedMin, bedAmPm, wakeHour, wakeMin, wakeAmPm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const durHrs = parseFloat(duration);
     
-    // Construct Date objects
     const end = new Date();
-    const start = new Date(end.getTime() - (durHrs * 3600000));
+    const start = new Date(end.getTime() - (duration * 3600000));
     
     await addLog('sleep', {
       startTime: start,
       endTime: end,
-      duration: durHrs,
+      duration,
       quality,
-      wakeUps: parseInt(wakeUps, 10)
+      wakeUps: interruptions
     });
 
-    if (hoursAwakeInput) {
-      setAwakeHours(parseFloat(hoursAwakeInput));
+    if (awakeHoursInput) {
+      setAwakeHours(awakeHoursInput);
     }
 
     setLoading(false);
   };
 
-  const hoursOptions = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-  const minutesOptions = ['00', '15', '30', '45'];
+  const qualityOptions = ['Poor', 'Fair', 'Good', 'Excellent'];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Persistent AI Voice & Text Bar */}
-      <AIVoiceBar placeholder="Speak or type e.g. 'Slept 7.5 hours last night', 'Restless sleep for 5 hours'..." />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Top Tabs Header matching Page 8 & 9 */}
+      <div className="tabs-header" style={{ justifyContent: 'center' }}>
+        <button 
+          className={`tab-button ${activeTab === 'manual' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manual')}
+        >
+          <span>✍️ Manual Log</span>
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'ai' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ai')}
+        >
+          <Sparkles size={16} color="#8b5cf6" />
+          <span>🤖 AI Parser</span>
+        </button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
-        {/* Sleep Logging Form */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Moon size={28} color="#6366f1" className="neon-glow-purple" />
+      {activeTab === 'manual' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            {/* Log Bedtime & Wake-Up Schedule matching Page 8 */}
             <div>
-              <h2 style={{ fontSize: '1.4rem' }}>Log Sleep Session</h2>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Record bedtime, wake-up time & awake baseline</p>
-            </div>
-          </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#ffffff', marginBottom: '1rem' }}>
+                Log Bedtime & Wake-Up Schedule
+              </h3>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Bedtime Selector */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8b5cf6', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    <Moon size={16} /> Bedtime
+                  </div>
+                  <strong style={{ fontSize: '1.35rem', fontWeight: '800', color: '#ffffff' }}>{bedtime}</strong>
+                </div>
+
+                <div className="glass-card" style={{ padding: '1.25rem', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ff9f43', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                    <Sun size={16} /> Wake-Up Time
+                  </div>
+                  <strong style={{ fontSize: '1.35rem', fontWeight: '800', color: '#ffffff' }}>{wakeTime}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Log Sleep Duration Slider matching Page 8 */}
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>Log Sleep Duration</span>
+                <span style={{ 
+                  backgroundColor: 'rgba(139, 92, 246, 0.25)', 
+                  color: '#8b5cf6', 
+                  padding: '0.35rem 0.85rem', 
+                  borderRadius: '999px',
+                  fontWeight: '700',
+                  fontSize: '0.85rem'
+                }}>
+                  7h 30m ({duration} hrs)
+                </span>
+              </div>
+              <input 
+                type="range" 
+                min="1" 
+                max="14" 
+                step="0.5"
+                value={duration}
+                onChange={e => setDuration(parseFloat(e.target.value))}
+              />
+            </div>
+
+            {/* Hours Awake / Wake-Up Baseline Slider matching Page 8 */}
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>Hours Awake / Wake-Up Baseline</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#00bcd4' }}>
+                  Continuous Awake Duration {awakeHoursInput.toFixed(1)} hrs
+                </span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="36" 
+                step="0.5"
+                value={awakeHoursInput}
+                onChange={e => setAwakeHoursInput(parseFloat(e.target.value))}
+                style={{ accentColor: '#00bcd4' }}
+              />
+            </div>
+
+            {/* Sleep Quality Segmented Buttons matching Page 8 */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
-                🌙 Bedtime (12-Hour Format)
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                <select value={bedHour} onChange={e => setBedHour(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  {hoursOptions.map(h => <option key={h} value={h}>{h} Hour</option>)}
-                </select>
-                <select value={bedMin} onChange={e => setBedMin(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  {minutesOptions.map(m => <option key={m} value={m}>{m} Min</option>)}
-                </select>
-                <select value={bedAmPm} onChange={e => setBedAmPm(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
+              <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#ffffff', marginBottom: '0.75rem' }}>
+                Sleep Quality
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.6rem' }}>
+                {qualityOptions.map(q => {
+                  const isSelected = quality === q;
+                  return (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => setQuality(q)}
+                      style={{
+                        padding: '0.75rem 0.5rem',
+                        borderRadius: '0.5rem',
+                        border: isSelected ? '2px solid #8b5cf6' : '1px solid var(--border-glass)',
+                        backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.2)' : 'var(--bg-card-solid)',
+                        color: '#ffffff',
+                        fontWeight: isSelected ? '700' : '400',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {q}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Wake-Up Time Selector */}
+            {/* Interruptions counter */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>
-                ☀️ Wake-Up Time (12-Hour Format)
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                <select value={wakeHour} onChange={e => setWakeHour(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  {hoursOptions.map(h => <option key={h} value={h}>{h} Hour</option>)}
-                </select>
-                <select value={wakeMin} onChange={e => setWakeMin(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  {minutesOptions.map(m => <option key={m} value={m}>{m} Min</option>)}
-                </select>
-                <select value={wakeAmPm} onChange={e => setWakeAmPm(e.target.value)} className="input-field" style={{ paddingLeft: '0.75rem' }}>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </div>
+              <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: '700', color: '#ffffff', marginBottom: '0.5rem' }}>
+                Interruptions (Night Wake-ups)
+              </span>
+              <input 
+                type="number"
+                min="0"
+                max="10"
+                value={interruptions}
+                onChange={e => setInterruptions(parseInt(e.target.value, 10) || 0)}
+                className="input-field"
+                style={{ paddingLeft: '1rem' }}
+              />
             </div>
 
-            {/* Dynamically Calculated Duration & Hours Awake */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Calculated Duration (hrs)</label>
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  value={duration} 
-                  onChange={e => setDuration(e.target.value)} 
-                  className="input-field" 
-                  style={{ paddingLeft: '1rem', fontWeight: 'bold', color: '#6366f1' }} 
-                  required 
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Hours Awake / Baseline Awake</label>
-                <input 
-                  type="number" 
-                  step="0.5" 
-                  value={hoursAwakeInput} 
-                  onChange={e => setHoursAwakeInput(e.target.value)} 
-                  className="input-field" 
-                  style={{ paddingLeft: '1rem', fontWeight: 'bold', color: '#06b6d4' }} 
-                  required 
-                />
-              </div>
-            </div>
-
-            {/* Sleep Quality & Wake-ups */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Sleep Quality</label>
-                <select value={quality} onChange={e => setQuality(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(12, 15, 32, 0.9)' }}>
-                  <option value="Excellent">⭐ Excellent</option>
-                  <option value="Good">👍 Good</option>
-                  <option value="Fair">😐 Fair</option>
-                  <option value="Poor">🥱 Poor</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Night Wake-ups</label>
-                <input type="number" value={wakeUps} onChange={e => setWakeUps(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} min="0" max="10" />
-              </div>
-            </div>
-
-            <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '0.5rem' }}>
-              {loading ? 'Saving...' : 'Save Sleep Entry'}
+            <button type="submit" className="btn-purple" style={{ padding: '0.9rem', fontSize: '1rem', borderRadius: '0.65rem' }} disabled={loading}>
+              {loading ? 'Saving Entry...' : 'Save Sleep Entry'}
             </button>
           </form>
-        </div>
 
-        {/* Sleep History & Stats */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Recent Sleep Logs</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}>
-            {logs.sleep && logs.sleep.length > 0 ? (
-              logs.sleep.map((log, i) => (
-                <div key={i} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', display: 'block' }}>{log.duration} hrs</span>
-                    <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Quality: {log.quality} • Wakeups: {log.wakeUps || 0}</span>
+          {/* Side History */}
+          <div className="glass-panel" style={{ padding: '1.75rem' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1.25rem', color: '#ffffff' }}>
+              Logged Sleep Sessions
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}>
+              {logs.sleep && logs.sleep.length > 0 ? (
+                logs.sleep.map((log, i) => (
+                  <div key={i} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '1.1rem', color: '#ffffff', display: 'block' }}>{log.duration} hrs</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Quality: {log.quality}</span>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#8b5cf6', display: 'block' }}>Recovery 85%</span>
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{new Date(log.endTime || Date.now()).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#10b981', display: 'block' }}>+{log.recoveryScore || 80} Recovery</span>
-                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{new Date(log.endTime).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>No sleep logs recorded yet.</p>
-            )}
+                ))
+              ) : (
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>No sleep logs recorded yet.</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
+          <Sparkles size={32} color="#8b5cf6" style={{ marginBottom: '1rem' }} />
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Sleep Log Parser</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+            Dictate or type e.g. "Slept 7.5 hours from 11 PM to 6:30 AM" using the top <strong>+ AI Log</strong> button.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

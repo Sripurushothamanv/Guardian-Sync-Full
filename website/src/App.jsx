@@ -26,9 +26,12 @@ import WellnessGoalsScreen from './screens/WellnessGoalsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 
+import TopBar from './components/TopBar';
+
 // Protected Layout wrapper
 const ProtectedLayout = ({ children }) => {
   const { token } = useContext(AppContext);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   if (!token) {
     return <Navigate to="/login" replace />;
@@ -36,10 +39,13 @@ const ProtectedLayout = ({ children }) => {
 
   return (
     <div className="app-container">
-      <Navigation />
-      <main className="main-content">
-        {children}
-      </main>
+      <TopBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="app-layout-body">
+        {sidebarOpen && <Navigation />}
+        <main className="main-content" style={{ marginLeft: sidebarOpen ? '270px' : '0' }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

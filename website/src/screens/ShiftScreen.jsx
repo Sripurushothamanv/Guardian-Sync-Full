@@ -1,164 +1,186 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
-import AIVoiceBar from '../components/AIVoiceBar';
-import { Clock, CheckCircle, FileText, AlertTriangle } from 'lucide-react';
+import { Clock, Calendar, Sparkles, Zap, AlignLeft } from 'lucide-react';
 
 export default function ShiftScreen() {
   const { addLog, logs, dashboardData } = useContext(AppContext);
-  const [shiftType, setShiftType] = useState('Night');
-  const [duration, setDuration] = useState('12');
-  const [breakDuration, setBreakDuration] = useState('30');
-  const [noBreak, setNoBreak] = useState(false);
-  const [shiftNotes, setShiftNotes] = useState('');
+  const [activeTab, setActiveTab] = useState('manual');
+  const [shiftType, setShiftType] = useState('Day Shift (+10 pts)');
+  const [restInterval, setRestInterval] = useState('30 Minutes');
+  const [startTime, setStartTime] = useState('2026-08-05 09:38');
+  const [endTime, setEndTime] = useState('2026-08-05 17:38');
+  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const durHrs = parseFloat(duration);
-    const end = new Date();
-    const start = new Date(end.getTime() - (durHrs * 3600000));
-
+    
     await addLog('shift', {
-      startTime: start,
-      endTime: end,
-      duration: durHrs,
       shiftType,
-      breakDuration: noBreak ? 0 : parseInt(breakDuration, 10),
-      noBreak,
-      shiftNotes
+      restInterval,
+      startTime,
+      endTime,
+      duration: 8,
+      notes
     });
 
-    setShiftNotes('');
+    setNotes('');
     setLoading(false);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Persistent AI Voice & Text Bar */}
-      <AIVoiceBar placeholder="Speak or type e.g. 'Working a 12 hour night shift', 'On-call shift for 8 hours'..." />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Top Tabs Header matching Page 12 */}
+      <div className="tabs-header" style={{ justifyContent: 'center' }}>
+        <button 
+          className={`tab-button ${activeTab === 'manual' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manual')}
+        >
+          <span>✍️ Manual Log</span>
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'ai' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ai')}
+        >
+          <Sparkles size={16} color="#ff9f43" />
+          <span>🤖 AI Parser</span>
+        </button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <Clock size={28} color="#ec4899" className="neon-glow-pink" />
-            <div>
-              <h2 style={{ fontSize: '1.4rem' }}>Log Duty Shift</h2>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Record active hospital shift parameters & notes</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Shift Duty Type</label>
-              <select value={shiftType} onChange={e => setShiftType(e.target.value)} className="input-field" style={{ paddingLeft: '1rem', backgroundColor: 'rgba(12, 15, 32, 0.9)' }}>
-                <option value="Night">🦇 Night Shift (+30 Impact)</option>
-                <option value="On-Call">🩺 On-Call Shift (+25 Impact)</option>
-                <option value="Rotating">🔄 Rotating Shift (+20 Impact)</option>
-                <option value="Day">☀️ Day Shift (+10 Impact)</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>Shift Duration (Hours)</label>
-              <input type="number" step="0.5" value={duration} onChange={e => setDuration(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
-            </div>
-
-            {/* No Break Taken Toggle + Break Duration */}
-            <div className="glass-card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input 
-                    type="checkbox" 
-                    id="noBreakToggle" 
-                    checked={noBreak} 
-                    onChange={e => setNoBreak(e.target.checked)} 
-                    className="toggle-checkbox"
-                  />
-                  <label htmlFor="noBreakToggle" style={{ fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                    No Break Taken
-                  </label>
-                </div>
-                {noBreak && (
-                  <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <AlertTriangle size={12} /> +5 Extra Fatigue Burden
-                  </span>
-                )}
+      {activeTab === 'manual' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            
+            {/* Selected Duty Banner matching Page 12 */}
+            <div className="glass-card" style={{ 
+              padding: '1.25rem', 
+              borderColor: 'rgba(255, 159, 67, 0.4)', 
+              backgroundColor: 'rgba(255, 159, 67, 0.1)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              borderRadius: '0.75rem'
+            }}>
+              <Zap size={22} color="#ff9f43" />
+              <div>
+                <strong style={{ display: 'block', fontSize: '0.95rem', color: '#ffffff' }}>
+                  Selected: Day Duty Shift
+                </strong>
+                <span style={{ fontSize: '0.85rem', color: '#ff9f43', fontWeight: '700' }}>
+                  +10 Fatigue Impact Points
+                </span>
               </div>
-
-              {!noBreak && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.35rem', color: 'rgba(255,255,255,0.6)' }}>Break Taken (Minutes)</label>
-                  <input type="number" value={breakDuration} onChange={e => setBreakDuration(e.target.value)} className="input-field" style={{ paddingLeft: '1rem' }} required />
-                </div>
-              )}
             </div>
 
-            {/* Shift Notes / Department Logs Textarea */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>
-                Shift Notes / Department Logs
-              </label>
-              <textarea 
-                placeholder="Log critical cases, patient handovers, fatigue symptoms, or department observations..." 
-                value={shiftNotes} 
-                onChange={e => setShiftNotes(e.target.value)} 
-                className="input-field"
-                style={{ padding: '0.75rem 1rem', minHeight: '90px' }}
+            {/* Shift Type Dropdown matching Page 12 */}
+            <select 
+              value={shiftType} 
+              onChange={e => setShiftType(e.target.value)} 
+              className="input-field" 
+              style={{ backgroundColor: '#161C36' }}
+            >
+              <option value="Day Shift (+10 pts)">☀️ Day Shift (+10 pts)</option>
+              <option value="Night Shift (+30 pts)">🦇 Night Shift (+30 pts)</option>
+              <option value="On-Call Shift (+25 pts)">🩺 On-Call Shift (+25 pts)</option>
+              <option value="Rotating Shift (+20 pts)">🔄 Rotating Shift (+20 pts)</option>
+            </select>
+
+            {/* Rest Interval Dropdown matching Page 12 */}
+            <select 
+              value={restInterval} 
+              onChange={e => setRestInterval(e.target.value)} 
+              className="input-field" 
+              style={{ backgroundColor: '#161C36' }}
+            >
+              <option value="30 Minutes">30 Minutes Rest</option>
+              <option value="45 Minutes">45 Minutes Rest</option>
+              <option value="60 Minutes">60 Minutes Rest</option>
+              <option value="No Break">No Break Taken (+5 Burden)</option>
+            </select>
+
+            {/* Start Time Picker Card matching Page 12 */}
+            <div className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Calendar size={20} color="#ff9f43" />
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>Start Time</span>
+                <input 
+                  type="text" 
+                  value={startTime} 
+                  onChange={e => setStartTime(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '0.95rem', fontWeight: '700', outline: 'none', width: '100%' }}
+                />
+              </div>
+            </div>
+
+            {/* End Time Picker Card matching Page 12 */}
+            <div className="glass-card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Calendar size={20} color="#ff9f43" />
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>End Time</span>
+                <input 
+                  type="text" 
+                  value={endTime} 
+                  onChange={e => setEndTime(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: '0.95rem', fontWeight: '700', outline: 'none', width: '100%' }}
+                />
+              </div>
+            </div>
+
+            {/* Notes Input Field matching Page 12 */}
+            <div className="input-with-icon">
+              <AlignLeft size={18} className="input-icon" />
+              <input 
+                type="text" 
+                placeholder="Notes" 
+                value={notes} 
+                onChange={e => setNotes(e.target.value)} 
+                className="input-field" 
               />
             </div>
 
-            <button type="submit" className="btn-primary" style={{ backgroundColor: '#ec4899' }} disabled={loading}>
-              {loading ? 'Saving Shift...' : 'Save Shift Roster'}
+            {/* Primary Orange Button matching Page 12 */}
+            <button 
+              type="submit" 
+              className="btn-orange" 
+              style={{ padding: '0.9rem', fontSize: '1rem', borderRadius: '0.65rem' }} 
+              disabled={loading}
+            >
+              {loading ? 'Logging Shift...' : 'Log Shift'}
             </button>
           </form>
-        </div>
 
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Current Shift Impact</h2>
-          
-          {dashboardData?.activeShift ? (
-            <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.1)' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#ec4899', letterSpacing: '1px', display: 'block' }}>ACTIVE DUTY SHIFT</span>
-              <h3 style={{ fontSize: '1.25rem', margin: '0.25rem 0' }}>{dashboardData.activeShift.type} Duty</h3>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Duration: {dashboardData.activeShift.duration} hrs ongoing</p>
-            </div>
-          ) : (
-            <div className="glass-card" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
-              <CheckCircle size={18} color="#10b981" />
-              <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: '600' }}>No active shift right now (Off-Duty Rest)</span>
-            </div>
-          )}
-
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>Shift History & Department Logs</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '360px', overflowY: 'auto' }}>
-            {logs.shift && logs.shift.length > 0 ? (
-              logs.shift.map((s, i) => (
-                <div key={i} className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Side History */}
+          <div className="glass-panel" style={{ padding: '1.75rem' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '1.25rem', color: '#ffffff' }}>
+              Shift History Log
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '420px', overflowY: 'auto' }}>
+              {logs.shift && logs.shift.length > 0 ? (
+                logs.shift.map((s, i) => (
+                  <div key={i} className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{s.shiftType} Shift</span>
-                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', display: 'block' }}>
-                        Break: {s.noBreak ? 'No Break (+5 Fatigue)' : `${s.breakDuration} mins`}
-                      </span>
+                      <strong style={{ fontSize: '0.95rem', color: '#ffffff', display: 'block' }}>{s.shiftType}</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Rest: {s.restInterval || '30 Mins'}</span>
                     </div>
-                    <span style={{ fontWeight: 'bold', color: '#ec4899', fontSize: '1.1rem' }}>{s.duration} hrs</span>
+                    <span style={{ fontWeight: '800', color: '#ff9f43' }}>Logged</span>
                   </div>
-
-                  {s.shiftNotes && (
-                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '0.35rem', borderLeft: '3px solid #ec4899' }}>
-                      <FileText size={12} style={{ display: 'inline', marginRight: '0.35rem', color: '#ec4899' }} />
-                      {s.shiftNotes}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>No shift logs recorded yet.</p>
-            )}
+                ))
+              ) : (
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>No shift logs recorded yet.</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
+          <Sparkles size={32} color="#ff9f43" style={{ marginBottom: '1rem' }} />
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Shift Parser</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
+            Dictate or type e.g. "Worked 8 hour day shift in ICU" using the top <strong>+ AI Log</strong> button.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
