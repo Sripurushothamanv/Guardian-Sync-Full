@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIParser from '../components/AIParser';
 import { Moon, Sun, Sparkles, Clock, Calendar } from 'lucide-react';
 
 export default function SleepScreen() {
@@ -206,14 +207,14 @@ export default function SleepScreen() {
           </div>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Sparkles size={32} color="#8b5cf6" style={{ marginBottom: '1rem' }} />
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Sleep Log Parser</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-            Dictate or type e.g. "Slept 7.5 hours from 11 PM to 6:30 AM" using the top <strong>+ AI Log</strong> button.
-          </p>
-        </div>
+        <AIParser 
+          type="sleep" 
+          placeholder="e.g. Slept 7.5 hours last night with good quality sleep." 
+          buttonText="Parse Sleep with AI" 
+          accentColor="#8b5cf6" 
+        />
       )}
     </div>
   );
 }
+

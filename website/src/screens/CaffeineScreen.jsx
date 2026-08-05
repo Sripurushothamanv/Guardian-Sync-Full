@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIParser from '../components/AIParser';
 import { Coffee, Plus, Minus, Clock, Calendar, Sparkles } from 'lucide-react';
 
 export default function CaffeineScreen() {
@@ -209,15 +210,15 @@ export default function CaffeineScreen() {
           </div>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Sparkles size={32} color="#00bcd4" style={{ marginBottom: '1rem' }} />
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Caffeine Log Parser</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-            Use the top <strong>+ AI Log</strong> button to dictate or type natural language intake!
-          </p>
-        </div>
+        <AIParser 
+          type="caffeine" 
+          placeholder="e.g. Drank 2 cups of filter coffee at 2 PM." 
+          buttonText="Parse Caffeine with AI" 
+          accentColor="#00bcd4" 
+        />
       )}
     </div>
   );
 }
+
 

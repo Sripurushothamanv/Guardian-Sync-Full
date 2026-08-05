@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIParser from '../components/AIParser';
 import { Utensils, Droplets, Sparkles } from 'lucide-react';
 
 export default function NutritionScreen() {
@@ -213,15 +214,15 @@ export default function NutritionScreen() {
           </div>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Sparkles size={32} color="#00b894" style={{ marginBottom: '1rem' }} />
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Meal Parser</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-            Dictate or type e.g. "Ate chicken breast with rice for lunch" using the top <strong>+ AI Log</strong> button.
-          </p>
-        </div>
+        <AIParser 
+          type="nutrition" 
+          placeholder="e.g. Ate chicken breast with rice and drank 500ml water for lunch." 
+          buttonText="Parse Meal with AI" 
+          accentColor="#00b894" 
+        />
       )}
     </div>
   );
 }
+
 

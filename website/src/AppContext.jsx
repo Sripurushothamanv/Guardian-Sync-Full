@@ -59,7 +59,7 @@ export const AppProvider = ({ children }) => {
     sleepDebt: 1.5,
     activeCaffeine: 45,
     recoveryScore: 82,
-    waterIntake: 1250,
+    waterIntake: 0,
     awakeHours: 6.2,
     lastNightSleep: 7.2,
     lastSleepQuality: 'Good',
@@ -461,15 +461,15 @@ export const AppProvider = ({ children }) => {
 
     // 7. Water Intake Today
     const todayStr = now.toDateString();
-    let waterIntake = 1250;
+    let waterIntake = 0;
     if (logs.nutrition && logs.nutrition.length > 0) {
       const loggedWater = logs.nutrition
         .filter(n => {
           const logDate = n.timestamp ? new Date(n.timestamp) : (n.createdAt ? new Date(n.createdAt) : null);
-          return logDate && logDate.toDateString() === todayStr && (n.foodItem || '').toLowerCase().includes('water');
+          return logDate && logDate.toDateString() === todayStr && ((n.foodItem || '').toLowerCase().includes('water') || n.mealCategory === 'Hydration' || (n.volume && n.volume > 0));
         })
         .reduce((sum, n) => sum + (n.volume || 250), 0);
-      if (loggedWater > 0) waterIntake = loggedWater;
+      waterIntake = loggedWater;
     }
 
     const calculatedDash = {
@@ -835,6 +835,8 @@ export const AppProvider = ({ children }) => {
   };
 
   return (
+
+
     <AppContext.Provider value={{
       token,
       user,

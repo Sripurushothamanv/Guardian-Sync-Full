@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../AppContext';
+import AIParser from '../components/AIParser';
 import { Clock, Calendar, Sparkles, Zap, AlignLeft } from 'lucide-react';
 
 export default function ShiftScreen() {
@@ -173,14 +174,14 @@ export default function ShiftScreen() {
           </div>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-          <Sparkles size={32} color="#ff9f43" style={{ marginBottom: '1rem' }} />
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>AI Shift Parser</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-            Dictate or type e.g. "Worked 8 hour day shift in ICU" using the top <strong>+ AI Log</strong> button.
-          </p>
-        </div>
+        <AIParser 
+          type="shift" 
+          placeholder="e.g. Worked a 12 hour night shift yesterday with 45 minutes breaks." 
+          buttonText="Parse Shift with AI" 
+          accentColor="#ff9f43" 
+        />
       )}
     </div>
   );
 }
+
