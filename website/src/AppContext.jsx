@@ -143,10 +143,21 @@ export const AppProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Date Normalizer for 2-way Cross-Platform Firebase Sync (Mobile & Web)
+  const normalizeDate = (val) => {
+    if (!val) return new Date().toISOString();
+    if (val.toDate && typeof val.toDate === 'function') return val.toDate().toISOString();
+    if (typeof val === 'number') return new Date(val).toISOString();
+    if (typeof val === 'string') {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    return new Date().toISOString();
+  };
+
   // Real-time 2-way Firestore Listeners
   useEffect(() => {
     if (!user || !user.uid) return;
-    console.log("Current Web Auth UID:", user?.uid);
 
     const uid = user.uid;
     const unsubscribes = [];
@@ -158,11 +169,41 @@ export const AppProvider = ({ children }) => {
           const fetchedLogs = [];
           snapshot.forEach(docSnap => {
             const data = docSnap.data();
-            fetchedLogs.push({
+            const timeISO = normalizeDate(data.timestamp || data.createdAt);
+
+            let processedItem = {
               _id: docSnap.id,
               ...data,
-              timestamp: data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate().toISOString() : data.timestamp) : (data.createdAt || new Date().toISOString())
-            });
+              timestamp: timeISO,
+              createdAt: normalizeDate(data.createdAt || data.timestamp)
+            };
+
+            // Cross-platform field normalizations
+            if (logTypeKey === 'sleep') {
+              const endISO = normalizeDate(data.endTime || data.timestamp || data.createdAt);
+              const dur = data.duration || 8;
+              const startISO = normalizeDate(data.startTime || new Date(new Date(endISO).getTime() - dur * 3600000).toISOString());
+              processedItem.startTime = startISO;
+              processedItem.endTime = endISO;
+              processedItem.duration = Number(dur);
+              processedItem.quality = data.quality || 'Good';
+            } else if (logTypeKey === 'shift') {
+              const startISO = normalizeDate(data.startTime || data.timestamp || data.createdAt);
+              const dur = data.duration || 8;
+              const endISO = normalizeDate(data.endTime || new Date(new Date(startISO).getTime() + dur * 3600000).toISOString());
+              processedItem.startTime = startISO;
+              processedItem.endTime = endISO;
+              processedItem.duration = Number(dur);
+              processedItem.shiftType = data.shiftType || 'Day';
+            } else if (logTypeKey === 'caffeine') {
+              processedItem.mgAmount = Number(data.mgAmount || data.caffeineMg || 0);
+              processedItem.beverage = data.beverage || 'Coffee';
+            } else if (logTypeKey === 'nutrition') {
+              processedItem.volume = Number(data.volume || 0);
+              processedItem.foodItem = data.foodItem || (data.mealCategory === 'Hydration' ? 'Water' : 'Meal');
+            }
+
+            fetchedLogs.push(processedItem);
           });
 
           setLogs(prev => ({
@@ -188,6 +229,7 @@ export const AppProvider = ({ children }) => {
       unsubscribes.forEach(unsub => unsub && unsub());
     };
   }, [user?.uid]);
+
 
   // Recalculate dashboard metrics whenever logs or user update
   useEffect(() => {
@@ -498,9 +540,11 @@ export const AppProvider = ({ children }) => {
     };
     
     if (type === 'sleep') {
-      const start = new Date(logData.startTime);
-      const end = new Date(logData.endTime);
+      const start = new Date(logData.startTime || Date.now() - (logData.duration || 8) * 3600000);
+      const end = new Date(logData.endTime || Date.now());
       const duration = parseFloat(((end - start) / (1000 * 60 * 60)).toFixed(2));
+      newLog.startTime = start.toISOString();
+      newLog.endTime = end.toISOString();
       newLog.duration = duration;
       
       let base = 50;
@@ -512,6 +556,11 @@ export const AppProvider = ({ children }) => {
       else if (logData.quality === 'Poor') base -= 15;
       base -= ((logData.wakeUps || 0) * 5);
       newLog.recoveryScore = Math.min(100, Math.max(0, base));
+    } else if (type === 'shift') {
+      const start = new Date(logData.startTime || Date.now());
+      const end = new Date(logData.endTime || Date.now() + (logData.duration || 8) * 3600000);
+      newLog.startTime = start.toISOString();
+      newLog.endTime = end.toISOString();
     }
 
     setLogs(prev => ({
