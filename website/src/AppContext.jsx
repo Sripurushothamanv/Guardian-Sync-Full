@@ -395,13 +395,16 @@ export const AppProvider = ({ children }) => {
     let activeCaffeine = 0;
     if (logs.caffeine && logs.caffeine.length > 0) {
       logs.caffeine.forEach(log => {
-        const t = (now - new Date(log.timestamp)) / (1000 * 60 * 60);
+        const timeVal = log.timestamp || log.createdAt;
+        const logDate = new Date(timeVal);
+        const t = (now - logDate) / (1000 * 60 * 60);
         if (t >= 0 && t <= 24) {
-          activeCaffeine += (log.mgAmount || 0) * Math.pow(0.5, t / 5.0);
+          activeCaffeine += Number(log.mgAmount || log.caffeineMg || 0) * Math.pow(0.5, t / 5.0);
         }
       });
     }
     activeCaffeine = Math.round(activeCaffeine);
+
 
     // 2. Sleep Debt (Last 7 Days)
     let sleepDebt = 1.5;
