@@ -44,6 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Large/generated files
+*.hprof
+replay_pid*.log
+hs_err_pid*.log
+
 # Test suite generated files
 test_suite/node_modules/
 test_suite/*.xlsx
